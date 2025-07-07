@@ -1,0 +1,318 @@
+---
+title: "AtmospherePlotter"
+output: html_document
+date: "2024-06-26"
+---
+
+```{r}
+library(dplyr)
+library(mgcv)
+library(broom)
+library(ggplot2)
+library(gridExtra)
+library(ggpubr)
+```
+
+```{r}
+# set file paths for the concentration grids at all 5 sample times - NOTE: This will need changing to suit your needs
+
+grid_csv <- fs::path_abs(
+  "HorizontalSliceGrid_2015-08-21T053100_CONCENTRATION.csv"
+)
+grid_csv2 <- fs::path_abs(
+  "HorizontalSliceGrid_2015-08-21T054500_CONCENTRATION.csv"
+)
+grid_csv3 <- fs::path_abs(
+  "HorizontalSliceGrid_2015-08-21T060000_CONCENTRATION.csv"
+)
+grid_csv4 <- fs::path_abs(
+  "HorizontalSliceGrid_2015-08-21T061500_CONCENTRATION.csv"
+)
+grid_csv5 <- fs::path_abs(
+  "HorizontalSliceGrid_2015-08-21T063000_CONCENTRATION.csv"
+)
+```
+
+```{r}
+# read the lines in the files
+
+lines <- readr::read_lines(grid_csv)
+lines2 <- readr::read_lines(grid_csv2)
+lines3 <- readr::read_lines(grid_csv3)
+lines4 <- readr::read_lines(grid_csv4)
+lines5 <- readr::read_lines(grid_csv5)
+```
+
+```{r}
+# Find line numbers for lines starting with search_pattern
+search_pattern <- "^SLICE HEIGHT"
+offsets <- stringr::str_which(lines, search_pattern)
+offsets2 <- stringr::str_which(lines2, search_pattern)
+offsets3 <- stringr::str_which(lines3, search_pattern)
+offsets4 <- stringr::str_which(lines4, search_pattern)
+offsets5 <- stringr::str_which(lines5, search_pattern)
+
+# For each line containing search pattern, extract the numeric value of height
+# and convert this to a numeric type
+extract_pattern <- r"((?<=:,)[0-9]+\.[0-9]+)"
+slice_heights <- stringr::str_extract(lines[offsets], extract_pattern) |>
+  as.numeric()
+slice_heights2 <- stringr::str_extract(lines2[offsets2], extract_pattern) |>
+  as.numeric()
+slice_heights3 <- stringr::str_extract(lines3[offsets3], extract_pattern) |>
+  as.numeric()
+slice_heights4 <- stringr::str_extract(lines4[offsets4], extract_pattern) |>
+  as.numeric()
+slice_heights5 <- stringr::str_extract(lines5[offsets5], extract_pattern) |>
+  as.numeric()
+```
+
+```{r}
+#' Extract gridded data from CSV containing multiple table
+#'
+#' Reads `n_max` rows of CSV data, starting from line `offset`, and converts
+#' this to a `matrix`. All data is assumed to be numeric and the returned matrix
+#' is of type double.
+#'
+#' @param file Path to file, connection, or literal data, containing CSV data.
+#'  To be passed to [readr::read_csv()] `file` argument
+#' @param offset Number of lines to skip in `file` before reading gridded data
+#' @param n_rows Number of rows of gridded data to read (default: 100)
+#' @param skip_last_col Logical indicating whether last column of gridded data
+#'  should be ignored. This is useful if the rows of gridded data have a
+#'  trailing comma (default: TRUE)
+#' @returns A double matrix containing gridded data, with `n_rows` rows and
+#'  number of columns determined by the shape of the input data.
+get_slice_as_matrix <- function(
+  file,
+  offset,
+  n_rows = 100,
+  skip_last_col = TRUE) {
+  tbl <- readr::read_csv(
+    file = file,
+    col_names = FALSE,
+    col_types = readr::cols(.default = readr::col_double()),
+    n_max = n_rows,
+    skip = offset
+  )
+  if (skip_last_col) {
+    tbl <- tbl |> dplyr::select(!tidyselect::last_col())
+  }
+  mat <- tbl |> as.matrix() |> unname()
+  return(mat)
+}
+```
+
+```{r}
+# extract data to matrices for each file
+
+mats <- lapply(
+  X = offsets,
+  FUN = function(x) {
+    get_slice_as_matrix(
+      grid_csv,
+      x,
+      n_rows = 100,
+      skip_last_col = TRUE
+    )
+  }
+)
+
+mats2 <- lapply(
+  X = offsets2,
+  FUN = function(x) {
+    get_slice_as_matrix(
+      grid_csv2,
+      x,
+      n_rows = 100,
+      skip_last_col = TRUE
+    )
+  }
+)
+
+mats3 <- lapply(
+  X = offsets3,
+  FUN = function(x) {
+    get_slice_as_matrix(
+      grid_csv3,
+      x,
+      n_rows = 100,
+      skip_last_col = TRUE
+    )
+  }
+)
+
+mats4 <- lapply(
+  X = offsets4,
+  FUN = function(x) {
+    get_slice_as_matrix(
+      grid_csv4,
+      x,
+      n_rows = 100,
+      skip_last_col = TRUE
+    )
+  }
+)
+
+mats5 <- lapply(
+  X = offsets5,
+  FUN = function(x) {
+    get_slice_as_matrix(
+      grid_csv5,
+      x,
+      n_rows = 100,
+      skip_last_col = TRUE
+    )
+  }
+)
+```
+
+```{r}
+# convert matrices to tibbles
+
+#tbl number 1
+grid_concs_tbl <- tibble::tibble(
+  slice_height = slice_heights,
+  conc_grid = mats
+) |> dplyr::arrange(slice_height)
+
+print(grid_concs_tbl, n = 5)
+#tbl number 2
+grid_concs_tbl2 <- tibble::tibble(
+  slice_height = slice_heights2,
+  conc_grid = mats2
+) |> dplyr::arrange(slice_height)
+
+print(grid_concs_tbl2, n = 5)
+#tbl number 3
+grid_concs_tbl3 <- tibble::tibble(
+  slice_height = slice_heights3,
+  conc_grid = mats3
+) |> dplyr::arrange(slice_height)
+
+print(grid_concs_tbl3, n = 5)
+#tbl number 4
+grid_concs_tbl4 <- tibble::tibble(
+  slice_height = slice_heights4,
+  conc_grid = mats4
+) |> dplyr::arrange(slice_height)
+
+print(grid_concs_tbl4, n = 5)
+#tbl number 5
+grid_concs_tbl5 <- tibble::tibble(
+  slice_height = slice_heights5,
+  conc_grid = mats5
+) |> dplyr::arrange(slice_height)
+
+print(grid_concs_tbl5, n = 5)
+```
+
+```{r}
+# Perform unit conversions and plot separately for comparison
+
+#Table 1
+grid_concs_tbl <- grid_concs_tbl |>
+  dplyr::mutate(summed_conc = purrr::map_dbl(conc_grid, sum)) |>
+  dplyr::mutate(summed_conc = signif(summed_conc * 1000, digits = 4))
+
+print(grid_concs_tbl, n = 5)
+plot(grid_concs_tbl$slice_height, grid_concs_tbl$summed_conc)
+
+#Table 2
+grid_concs_tbl2 <- grid_concs_tbl2 |>
+  dplyr::mutate(summed_conc = purrr::map_dbl(conc_grid, sum)) |>
+  dplyr::mutate(summed_conc = signif(summed_conc * 1000, digits = 4))
+
+print(grid_concs_tbl2, n = 5)
+plot(grid_concs_tbl2$slice_height, grid_concs_tbl2$summed_conc)
+
+#Table 3
+grid_concs_tbl3 <- grid_concs_tbl3 |>
+  dplyr::mutate(summed_conc = purrr::map_dbl(conc_grid, sum)) |>
+  dplyr::mutate(summed_conc = signif(summed_conc * 1000, digits = 4))
+
+print(grid_concs_tbl3, n = 5)
+plot(grid_concs_tbl3$slice_height, grid_concs_tbl3$summed_conc)
+
+#Table 4
+grid_concs_tbl4 <- grid_concs_tbl4 |>
+  dplyr::mutate(summed_conc = purrr::map_dbl(conc_grid, sum)) |>
+  dplyr::mutate(summed_conc = signif(summed_conc * 1000, digits = 4))
+
+print(grid_concs_tbl4, n = 5)
+plot(grid_concs_tbl4$slice_height, grid_concs_tbl4$summed_conc)
+
+#Table 5
+grid_concs_tbl5 <- grid_concs_tbl5 |>
+  dplyr::mutate(summed_conc = purrr::map_dbl(conc_grid, sum)) |>
+  dplyr::mutate(summed_conc = signif(summed_conc * 1000, digits = 4))
+
+print(grid_concs_tbl5, n = 5)
+plot(grid_concs_tbl5$slice_height, grid_concs_tbl5$summed_conc)
+```
+
+```{r}
+# modify tables for combined plotting in ggplot
+
+grid_concs_tbl1a <- grid_concs_tbl %>% select(, -conc_grid)
+grid_concs_tbl2a <- grid_concs_tbl2 %>% select(, -conc_grid)
+grid_concs_tbl3a <- grid_concs_tbl3 %>% select(, -conc_grid)
+grid_concs_tbl4a <- grid_concs_tbl4 %>% select(, -conc_grid)
+grid_concs_tbl5a <- grid_concs_tbl5 %>% select(, -conc_grid)
+```
+
+```{r}
+# render ggplot objects for each atmosphere profile and combine into one output image
+
+p1a <- ggplot(data = grid_concs_tbl1a, mapping = aes(x = slice_height, y = summed_conc)) + 
+  geom_point() +
+  labs(title = "1 minute", x = "Altitude (m)", y = "Concentration (ppmv)") +
+  theme(text = element_text(size = 18, colour = "black"),
+        plot.title = element_text(size = 22, colour = "black", hjust = 0.5),
+        axis.title.x = element_text(size = 20, colour ="black"),
+        axis.text = element_text(size = 18, colour = "black")) +
+  ylim(0, 60)
+
+p2a <- ggplot(data = grid_concs_tbl2a, mapping = aes(x = slice_height, y = summed_conc)) + 
+  geom_point() +
+  labs(title = "15 minutes", x = "Altitude (m)", y = "") +
+  theme(text = element_text(size = 18, colour = "black"),
+        plot.title = element_text(size = 22, colour = "black", hjust = 0.5),
+        axis.title.x = element_text(size = 20, colour ="black"),
+        axis.text = element_text(size = 18, colour = "black")) +
+  ylim(0.022, 0.023)
+
+p3a <- ggplot(data = grid_concs_tbl3a, mapping = aes(x = slice_height, y = summed_conc)) + 
+  geom_point() +
+  labs(title = "30 minutes", x = "Altitude (m)", y = "") +
+  theme(text = element_text(size = 18, colour = "black"),
+        plot.title = element_text(size = 22, colour = "black", hjust = 0.5),
+        axis.title.x = element_text(size = 20, colour ="black"),
+        axis.text = element_text(size = 18, colour = "black")) +
+  ylim(0.0048, 0.005)
+
+p4a <- ggplot(data = grid_concs_tbl4a, mapping = aes(x = slice_height, y = summed_conc)) + 
+  geom_point() +
+  labs(title = "45 minutes", x = "Altitude (m)", y = "Concentration (ppmv)") +
+  theme(text = element_text(size = 18, colour = "black"),
+        plot.title = element_text(size = 22, colour = "black", hjust = 0.5),
+        axis.title.x = element_text(size = 20, colour ="black"),
+        axis.text = element_text(size = 18, colour = "black")) +
+  ylim(0.0023, 0.0024)
+
+p5a <- ggplot(data = grid_concs_tbl5a, mapping = aes(x = slice_height, y = summed_conc)) + 
+  geom_point() +
+  labs(title = "60 minutes", x = "Altitude (m)", y = "") +
+  theme(text = element_text(size = 18, colour = "black"),
+        plot.title = element_text(size = 22, colour = "black", hjust = 0.5),
+        axis.title.x = element_text(size = 20, colour ="black"),
+        axis.text = element_text(size = 18, colour = "black")) +
+  ylim(0.0014, 0.0015)
+
+png(filename = "GB_I100_v6.png", width = 4800, height = 4800, pointsize = 1, res = 300)
+
+#grid.arrange(p1a, p2a, p3a, p4a, p5a, nrow=2)
+ggarrange(ggarrange(p1a, p2a, p3a, ncol=3), ggarrange(p4a, p5a, ncol=2), nrow=2)
+
+dev.off()
+```

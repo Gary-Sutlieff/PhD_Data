@@ -1,0 +1,421 @@
+---
+title: Generate atmospheric profile from gridded concentration data
+author: James C. Womack
+output: html_document
+---
+
+Set path to data file.
+
+> **NOTE**: The `.csv.gz` file must be decompressed before use, e.g. using
+>
+> ```
+> gunzip --keep HorizontalSliceGrid_2015-08-21T063000_CONCENTRATION.csv.gz
+> ```
+> 
+> which will produce the decompressed `.csv` file, ready for use.
+>
+> This is necessary, despite `readr::read_csv()` being able to decompress files 
+> as needed.
+>
+> This notebook relies on skipping lines using the `skip` argument to
+> `readr::read_csv()`. When using larger values of `skip` to read data from
+> later in the file, `readr::read_csv()` produces an error:
+> 
+> ```
+> Error: The size of the connection buffer (131072) was not large enough
+to fit a complete line:
+>   * Increase it by setting `Sys.setenv("VROOM_CONNECTION_SIZE")`
+> ```
+> 
+> This appears to only occur where the input file is compressed (`.csv.gz`).
+> For non-compressed input files (`.csv`), the error does not occur. This 
+> [Stack Overflow Q&A](https://stackoverflow.com/questions/68628271/partially-read-really-large-csv-gz-in-r-using-vroom)
+> describes a similar issue and suggests that random access from `.csv.gz` files
+> may not be possible.
+
+```{r}
+# load all necessary packages
+
+library(dplyr)
+library(mgcv)
+library(broom)
+```
+
+```{r}
+# set file path to concentration data - NOTE: this will need editing to suit your needs
+
+grid_csv <- fs::path_abs(
+  "HorizontalSliceGrid_2015-08-21T063000_CONCENTRATION.csv"
+)
+```
+
+# Read a single grid of concentration data (slice height 0.0 m)
+
+```{r}
+n_rows <- 100
+n_skip_lines <- 8
+
+single_grid_concs_tbl <- readr::read_csv(
+  file = grid_csv,
+  # don't interpret first row as row names
+  col_names = FALSE,
+  # columns contain floating point data by default
+  col_types = readr::cols(.default = readr::col_double()),
+  # skip last column (empty due to trailing comma)
+  col_select = !tidyselect::last_col(),
+  # specify number of rows of data to read
+  n_max = n_rows,
+  # start reading after skipping lines to "SLICE HEIGHT" heading
+  skip = n_skip_lines
+  )
+
+print(single_grid_concs_tbl, n = 5)
+```
+
+Convert tibble to matrix
+
+```{r}
+single_grid_concs_mat <- single_grid_concs_tbl |> as.matrix() |> unname()
+
+print(
+  sprintf(
+    "grid_concs dimensions: %s",
+    paste0(dim(single_grid_concs_mat), collapse = "x")
+  )
+)
+print(
+  sprintf(
+    "grid_concs object size: %s",
+    format(object.size(single_grid_concs_mat), units = "auto", standard = "IEC")
+  )
+)
+```
+
+# Read all grids of concentration data
+
+```{r}
+lines <- readr::read_lines(grid_csv)
+```
+
+Find positions of tables of data in data file and extract height values
+
+```{r}
+# Find line numbers for lines starting with search_pattern
+search_pattern <- "^SLICE HEIGHT"
+offsets <- stringr::str_which(lines, search_pattern)
+
+# For each line containing search pattern, extract the numeric value of height
+# and convert this to a numeric type
+extract_pattern <- r"((?<=:,)[0-9]+\.[0-9]+)"
+slice_heights <- stringr::str_extract(lines[offsets], extract_pattern) |>
+  as.numeric()
+```
+
+Function for extracting a single grid of data from a CSV file, documented using
+roxygen2, as described in the [R packages book](https://r-pkgs.org/man.html)
+
+```{r}
+#' Extract gridded data from CSV containing multiple table
+#'
+#' Reads `n_max` rows of CSV data, starting from line `offset`, and converts
+#' this to a `matrix`. All data is assumed to be numeric and the returned matrix
+#' is of type double.
+#'
+#' @param file Path to file, connection, or literal data, containing CSV data.
+#'  To be passed to [readr::read_csv()] `file` argument
+#' @param offset Number of lines to skip in `file` before reading gridded data
+#' @param n_rows Number of rows of gridded data to read (default: 100)
+#' @param skip_last_col Logical indicating whether last column of gridded data
+#'  should be ignored. This is useful if the rows of gridded data have a
+#'  trailing comma (default: TRUE)
+#' @returns A double matrix containing gridded data, with `n_rows` rows and
+#'  number of columns determined by the shape of the input data.
+get_slice_as_matrix <- function(
+  file,
+  offset,
+  n_rows = 100,
+  skip_last_col = TRUE) {
+  tbl <- readr::read_csv(
+    file = file,
+    col_names = FALSE,
+    col_types = readr::cols(.default = readr::col_double()),
+    n_max = n_rows,
+    skip = offset
+  )
+  if (skip_last_col) {
+    tbl <- tbl |> dplyr::select(!tidyselect::last_col())
+  }
+  mat <- tbl |> as.matrix() |> unname()
+  return(mat)
+}
+```
+
+Create list of matrices for tables of gridded data at each offset (slice height value).
+
+```{r}
+mats <- lapply(
+  X = offsets,
+  FUN = function(x) {
+    get_slice_as_matrix(
+      grid_csv,
+      x,
+      n_rows = 100,
+      skip_last_col = TRUE
+    )
+  }
+)
+```
+
+Create a tibble containing one matrix of gridded data per slice height and sort by slice height (in the input CSV, the 1m slice is after all other slices)
+
+```{r}
+grid_concs_tbl <- tibble::tibble(
+  slice_height = slice_heights,
+  conc_grid = mats
+) |> dplyr::arrange(slice_height)
+
+print(grid_concs_tbl, n = 5)
+```
+
+
+```{r}
+# slice_height is a double, so check approximate equality
+grid_at_1m <- (
+  grid_concs_tbl |>
+    dplyr::filter(dplyr::near(slice_height, 1.0)) |>
+    dplyr::pull(conc_grid)
+)[[1]]
+grid_at_2m <- (
+  grid_concs_tbl |>
+    dplyr::filter(dplyr::near(slice_height, 2.0)) |>
+    dplyr::pull(conc_grid)
+)[[1]]
+grid_at_3m <- (
+  grid_concs_tbl |>
+    dplyr::filter(dplyr::near(slice_height, 3.0)) |>
+    dplyr::pull(conc_grid)
+)[[1]]
+
+max_abs_diff_1m_2m <- max(abs(grid_at_1m - grid_at_2m))
+max_abs_diff_1m_3m <- max(abs(grid_at_1m - grid_at_3m))
+
+print(sprintf("Max. abs. diff (1m, 2m): %e", max_abs_diff_1m_2m))
+print(sprintf("Max. abs. diff (1m, 3m): %e", max_abs_diff_1m_3m))
+```
+
+# Calculate summed concentrations at each slice height
+
+```{r}
+grid_concs_tbl <- grid_concs_tbl |>
+  dplyr::mutate(summed_conc = purrr::map_dbl(conc_grid, sum)) |>
+  dplyr::mutate(summed_conc = signif(summed_conc * 1000, digits = 4))
+
+print(grid_concs_tbl, n = 5)
+plot(grid_concs_tbl$slice_height, grid_concs_tbl$summed_conc)
+```
+
+# Exponentially extend concentration data down to value of 0 or to altitude of 278 m
+
+# These commented-out blocks of code can be ignored, they were experiments in using different methods to extend the data past 100 m, such as a nonlinear general additive model, rather than the method of exponential decay that was finally chosen
+
+#```{r}
+# plot concentration profile to see shape - linear version
+#grid_concs_tbl2 <- grid_concs_tbl %>% select(, -conc_grid)
+# create linear model and extract model fitted values
+#y_lin <- grid_concs_tbl2$summed_conc
+#f_lin <- grid_concs_tbl2$slice_height
+#linear_mod_test <- lm(y_lin ~ f_lin)
+#linear_test_vec <- linear_mod_test[5]
+#test_vec2 <- linear_test_vec$fitted.values
+#grid_concs_tbl2$linear <- test_vec2
+#plot model against data
+#plot(grid_concs_tbl2$slice_height, grid_concs_tbl2$summed_conc)
+#lines(grid_concs_tbl2$slice_height, grid_concs_tbl2$linear, col="red")
+#```
+
+#```{r}
+# test prediction of later values up to 278 metres - linear version
+#altitude_extended <- data.frame(f_lin = seq(102, 278, by=2))
+#predicted_concs_linear <- predict(linear_mod_test, newdata=altitude_extended)
+#beyond_concs_tbl <- tibble(slice_height = seq(102, 278, by=2), summed_conc = predicted_concs_linear)
+#grid_concs_tbl3 <- grid_concs_tbl2 %>% select(, -linear)
+#extended_concs_tbl <- grid_concs_tbl3 %>% bind_rows(beyond_concs_tbl)
+#extended_concs_tbl$summed_conc[extended_concs_tbl$summed_conc<0] <-0
+#plot(extended_concs_tbl$slice_height, extended_concs_tbl$summed_conc)
+#```
+
+```{r}
+# try exponential decay past 100m
+grid_concs_tbl2 <- grid_concs_tbl %>% select(, -conc_grid)
+
+
+decay_tbl <- data.frame(x_decay = c(1, 450))
+lambda <- -(log(1e-20/grid_concs_tbl2$summed_conc[101]))/450
+decay_x_seq <- seq(1, 450, by=1)
+
+decay_func <- function(x){
+  grid_concs_tbl2$summed_conc[101]*exp(-lambda*x)
+}
+
+decay_values <- decay_x_seq %>% decay_func
+decay_ext_tbl <- tibble(slice_height = seq(102, 1000, by=2), summed_conc = decay_values)
+plot(decay_ext_tbl$slice_height, decay_ext_tbl$summed_conc)
+
+```
+
+```{r}
+# append decay to first 100 m of profile - exponential decay
+extended_concs_tbl <- grid_concs_tbl2 %>% bind_rows(decay_ext_tbl)
+extended_concs_tbl$summed_conc[extended_concs_tbl$summed_conc<0] <- 0
+extended_concs_tbl$summed_conc[extended_concs_tbl$summed_conc==0] <- 1e-20
+
+#plot to see shape
+
+plot(extended_concs_tbl$slice_height, extended_concs_tbl$summed_conc)
+```
+
+#```{r}
+# plot concentration profile to see shape - non-linear GAM
+#grid_concs_tbl3 <- grid_concs_tbl %>% select(, -conc_grid)
+#grid_concs_tbl3 <- subset(grid_concs_tbl3, grid_concs_tbl3$slice_height > 8) # optional line in ase of disjoint in profile
+#y_gam <- grid_concs_tbl3$summed_conc
+#f_gam <- grid_concs_tbl3$slice_height
+#gam_test <- gam(y_gam ~ s(f_gam), method = "REML")
+#gam_test_vec <- predict(gam_test, type = "response")
+#grid_concs_tbl3$gam <- gam_test_vec
+#plot(gam_test, residuals=TRUE, pch=1)
+#```
+
+#```{r}
+# test prediction of later values up to 1000 metres - non-linear GAM
+# configured to replace original data with general additive model fit instead of appending gam-predicted values to the end of original data
+# do this only for atmospheres where the gam is a good fit, otherwise swap the commented lines for their counterparts
+# or use the exponential decay model found above instead
+
+#altitude_extended <- data.frame(f_gam = seq(102, 1000, by=2))
+#predicted_concs_gam <- predict(gam_test, newdata=altitude_extended)
+#beyond_concs_tbl <- tibble(slice_height = seq(102, 1000, by=2), gam = predicted_concs_gam)
+#grid_concs_tbl4 <- grid_concs_tbl %>% select(, -conc_grid)
+#grid_concs_tbl4 <- grid_concs_tbl3 %>% select(, -summed_conc)
+#extended_concs_tbl2 <- grid_concs_tbl4 %>% bind_rows(beyond_concs_tbl)
+
+#extended_concs_tbl2$summed_conc[extended_concs_tbl2$summed_conc<0] <- 0
+#extended_concs_tbl2$summed_conc[extended_concs_tbl2$summed_conc==0] <- 1e-20
+
+#extended_concs_tbl2$gam[extended_concs_tbl2$gam<0] <- 0
+#extended_concs_tbl2$gam[extended_concs_tbl2$gam==0] <- 1e-20
+#plot(extended_concs_tbl2$slice_height, extended_concs_tbl2$gam)
+#```
+
+Output atmospheric profile to file
+
+Function for creating strings of formatted numbers from a numeric array, 
+documented using roxygen2, as described in the [R packages book](https://r-pkgs.org/man.html).
+
+```{r}
+#' Make a string containing numbers
+#'
+#' @description
+#' Extract a sequence of numbers from `numbers` and create a string
+#' containing the numbers. The numbers in the string are formatted using
+#' `format_spec`, and separated by `collapse`. The `n` numbers are extracted
+#' from index `start` in the `numbers` array. If there are fewer than `n`
+#' numbers in the array from `start` to the end of the array, the output string
+#' will contain only numbers up to the end of the array.
+#'
+#' @param numbers array of numbers (e.g. atomic vector or list)
+#' @param start integer start index for values to extract from `numbers`
+#' @param n integer number of values to extract from `numbers`
+#' @param format_spec format specification string for each number in output,
+#'   (to be passed to [sprintf()])
+#' @param collapse character string separating numbers in output (to be passed to
+#'   [paste0()])
+#' @returns A character string containing formatted values from `numbers`
+string_of_numbers <- function(
+  numbers,
+  start,
+  n,
+  n_max,
+  format_spec,
+  collapse
+) {
+  end <- min(start + n - 1, length(numbers))
+  string <- paste0(
+      sprintf(
+        format_spec,
+        numbers[seq(start, end)]
+      ),
+      collapse = collapse
+    )
+  return(string)
+}
+```
+
+Assemble lines to output to atmospheric profile file - choose which one to use!
+
+```{r}
+# exponential decay model
+
+n_per_line <- 5
+format_spec <- "%10.3e"
+collapse <- " "
+lines_to_output <- seq(1, nrow(extended_concs_tbl), n_per_line) |>
+  purrr::map(
+    function(n) {
+      string_of_numbers(
+        numbers = extended_concs_tbl[["summed_conc"]],
+        start = n,
+        n = n_per_line,
+        n_max = nrow(extended_concs_tbl),
+        format_spec = format_spec,
+        collapse = collapse
+      )
+    }
+  )
+```
+
+#```{r}
+# non-linear general additive model
+
+#n_per_line <- 5
+#format_spec <- "%10.3e"
+#collapse <- " "
+#lines_to_output2 <- seq(1, nrow(extended_concs_tbl2), n_per_line) |>
+#  purrr::map(
+#    function(n) {
+#      string_of_numbers(
+#        numbers = extended_concs_tbl2[["gam"]],
+#        # numbers = extended_concs_tbl2[["summed_conc"]],
+#        start = n,
+#        n = n_per_line,
+#        n_max = nrow(extended_concs_tbl2),
+#        format_spec = format_spec,
+#        collapse = collapse
+#      )
+#    }
+#  )
+#```
+
+Create output directory
+
+```{r}
+output_dir_path <- fs::dir_create(fs::path_wd("output"))
+```
+
+Output lines to text file - Choose Correct option for exponential decay or non-linear model extension of profile
+
+```{r}
+# exponential decay model
+
+lines_to_output |> readr::write_lines(
+  file = fs::path_join(c(output_dir_path, "60min_final.txt"))
+)
+```
+
+#```{r}
+# non-linear general additive model
+#
+#lines_to_output2 |> readr::write_lines(
+#  file = fs::path_join(c(output_dir_path, "atmospheric_profileV5_15min.txt"))
+#)
+#```
