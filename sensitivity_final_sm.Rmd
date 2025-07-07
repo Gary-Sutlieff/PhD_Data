@@ -1,0 +1,588 @@
+---
+title: "Jacobians"
+output: html_document
+date: "2024-06-26"
+---
+```{r}
+# load packages
+library(tidyverse)
+library(fs)
+library(dplyr)
+library(tibble)
+library(ggplot2)
+library(ggpubr)
+```
+
+```{r}
+#load all .atm files
+
+
+# Read the text file
+text1 <- readLines("./1/SM_B100_1.atm")
+text2 <- readLines("./15/SM_B100_15.atm")
+text3 <- readLines("./30/SM_B100_30.atm")
+text4 <- readLines("./45/SM_B100_45.atm")
+text5 <- readLines("./60/SM_B100_60.atm")
+
+# Find the indices where Altitude and Concentration start
+altitude_start1 <- grep("*HGT \\[km\\]", text1)
+concentration_start1 <- grep("*SM \\[ppmv\\]", text1)
+
+altitude_start2 <- grep("*HGT \\[km\\]", text2)
+concentration_start2 <- grep("*SM \\[ppmv\\]", text2)
+
+altitude_start3 <- grep("*HGT \\[km\\]", text3)
+concentration_start3 <- grep("*SM \\[ppmv\\]", text3)
+
+altitude_start4 <- grep("*HGT \\[km\\]", text4)
+concentration_start4 <- grep("*SM \\[ppmv\\]", text4)
+
+altitude_start5 <- grep("*HGT \\[km\\]", text5)
+concentration_start5 <- grep("*SM \\[ppmv\\]", text5)
+
+# Extract altitude data
+altitude_lines1 <- text1[(altitude_start1 + 1):(concentration_start1 - 1)]
+altitude1 <- as.numeric(unlist(strsplit(trimws(altitude_lines1), "\\s+")))
+
+altitude_lines2 <- text2[(altitude_start2 + 1):(concentration_start2 - 1)]
+altitude2 <- as.numeric(unlist(strsplit(trimws(altitude_lines2), "\\s+")))
+
+altitude_lines3 <- text3[(altitude_start3 + 1):(concentration_start3 - 1)]
+altitude3 <- as.numeric(unlist(strsplit(trimws(altitude_lines3), "\\s+")))
+
+altitude_lines4 <- text4[(altitude_start4 + 1):(concentration_start4 - 1)]
+altitude4 <- as.numeric(unlist(strsplit(trimws(altitude_lines4), "\\s+")))
+
+altitude_lines5 <- text5[(altitude_start5 + 1):(concentration_start5 - 1)]
+altitude5 <- as.numeric(unlist(strsplit(trimws(altitude_lines5), "\\s+")))
+
+# Extract concentration data
+concentration_lines1 <- text1[(concentration_start1 + 1):(length(text1) - 1)]
+concentration1 <- as.numeric(unlist(strsplit(trimws(concentration_lines1), "\\s+")))
+
+concentration_lines2 <- text2[(concentration_start2 + 1):(length(text2) - 1)]
+concentration2 <- as.numeric(unlist(strsplit(trimws(concentration_lines2), "\\s+")))
+
+concentration_lines3 <- text3[(concentration_start3 + 1):(length(text3) - 1)]
+concentration3 <- as.numeric(unlist(strsplit(trimws(concentration_lines3), "\\s+")))
+
+concentration_lines4 <- text4[(concentration_start4 + 1):(length(text4) - 1)]
+concentration4 <- as.numeric(unlist(strsplit(trimws(concentration_lines4), "\\s+")))
+
+concentration_lines5 <- text5[(concentration_start5 + 1):(length(text5) - 1)]
+concentration5 <- as.numeric(unlist(strsplit(trimws(concentration_lines5), "\\s+")))
+
+# Create a tibble
+atm1 <- tibble(Altitude_km = altitude1, Concentration = concentration1)
+atm2 <- tibble(Altitude_km = altitude2, Concentration = concentration2)
+atm3 <- tibble(Altitude_km = altitude3, Concentration = concentration3)
+atm4 <- tibble(Altitude_km = altitude4, Concentration = concentration4)
+atm5 <- tibble(Altitude_km = altitude5, Concentration = concentration5)
+
+# Print the tibble
+print(atm1)
+print(atm2)
+print(atm3)
+print(atm4)
+print(atm5)
+#atm is the equivalent of NH3PRF in the IDL script - also this works for gb or SM's profiles since they share the same fixed structure, but might not work for the other gases since the structure of the profile will be different?
+```
+
+```{r}
+# Load all Jacobian Files
+
+#Crop all atm files to where concentration is significant/non-zero
+
+atm1a <- subset(atm1, atm1$Concentration > 1e-20)
+atm2a <- subset(atm2, atm2$Concentration > 1e-20)
+atm3a <- subset(atm3, atm3$Concentration > 1e-20)
+atm4a <- subset(atm4, atm4$Concentration > 1e-20)
+atm5a <- subset(atm5, atm5$Concentration > 1e-20)
+
+# Find out how many jacobian files to bother with for each sample time based on where there are concentrations of the agent, then read that many files
+
+jacobian_levels <- seq(10, 250, by=20)
+level_final_1 <- tail(atm1a$Altitude_km, n=1)*1000
+level_final_2 <- tail(atm2a$Altitude_km, n=1)*1000
+level_final_3 <- tail(atm3a$Altitude_km, n=1)*1000
+level_final_4 <- tail(atm4a$Altitude_km, n=1)*1000
+level_final_5 <- tail(atm5a$Altitude_km, n=1)*1000
+
+n1 <- as.numeric(which(abs(jacobian_levels - level_final_1) == min(abs(jacobian_levels - level_final_1))))
+n2 <- as.numeric(which(abs(jacobian_levels - level_final_2) == min(abs(jacobian_levels - level_final_2))))
+n3 <- as.numeric(which(abs(jacobian_levels - level_final_3) == min(abs(jacobian_levels - level_final_3))))
+n4 <- as.numeric(which(abs(jacobian_levels - level_final_4) == min(abs(jacobian_levels - level_final_4))))
+n5 <- as.numeric(which(abs(jacobian_levels - level_final_5) == min(abs(jacobian_levels - level_final_5))))
+
+s1 <- seq(10, jacobian_levels[n1], by=20)
+l1 <- as.numeric(length(s1))
+s2 <- seq(10, jacobian_levels[n2], by=20)
+l2 <- as.numeric(length(s2))
+s3 <- seq(10, jacobian_levels[n3], by=20)
+l3 <- as.numeric(length(s3))
+s4 <- seq(10, jacobian_levels[n4], by=20)
+l4 <- as.numeric(length(s4))
+s5 <- seq(10, jacobian_levels[n5], by=20)
+l5 <- as.numeric(length(s5))
+
+file_paths1 <- vector("list", l1)
+index1 <- 1
+for (i in s1) {
+  file_paths1[index1] <- paste0("./1/SM_B100_1J_Y-90000_sm", sprintf("%05d", i), ".asc")
+  index1 <- index1+1
+}
+
+file_paths2 <- vector("list", l2)
+index2 <- 1
+for (i in s2) {
+  file_paths2[index2] <- paste0("./15/SM_B100_15J_Y-90000_sm", sprintf("%05d", i), ".asc")
+  index2 <- index2+1
+}
+
+file_paths3 <- vector("list", l3)
+index3 <- 1
+for (i in s3) {
+  file_paths3[index3] <- paste0("./30/SM_B100_30J_Y-90000_sm", sprintf("%05d", i), ".asc")
+  index3 <- index3+1
+}
+
+file_paths4 <- vector("list", l4)
+index4 <- 1
+for (i in s4) {
+  file_paths4[index4] <- paste0("./45/SM_B100_45J_Y-90000_sm", sprintf("%05d", i), ".asc")
+  index4 <- index4+1
+}
+
+file_paths5 <- vector("list", l5)
+index5 <- 1
+for (i in s5) {
+  file_paths5[index5] <- paste0("./60/SM_B100_60J_Y-90000_sm", sprintf("%05d", i), ".asc")
+  index5 <- index5+1
+}
+```
+
+```{r}
+# Read all of the Jacobian Files
+
+# Create an empty tibble to store the data
+result_tibble1 <- tibble()
+
+# Iterate over the file paths
+for (path1 in file_paths1) {
+  # Check if the file exists
+  if (file.exists(path1)) {
+    # Extract the file name without extension
+    file_name1 <- tools::file_path_sans_ext(basename(path1))
+    
+    # Extract the last part of the file name (after the last underscore)
+    column_name1 <- tail(strsplit(file_name1, "_")[[1]], n = 1)
+    
+    # Read the file using scan() with what = double()
+    data1 <- scan(path1, what = double(), skip = 4)  # Skip the first 4 lines
+    # Adjust other parameters based on your file format
+    
+    # Initialize the tibble with the expected number of rows if it's empty
+    if (nrow(result_tibble1) == 0) {
+      result_tibble1 <- tibble(!!column_name1 := data1)
+    } else {
+      # Add the column data to the result_tibble
+      result_tibble1[[column_name1]] <- data1
+    }
+  } else {
+    # If the file does not exist, print a warning message
+    warning(paste("File not found:", path1))
+  }
+}
+
+# Create an empty tibble to store the data
+result_tibble2 <- tibble()
+
+# Iterate over the file paths
+for (path2 in file_paths2) {
+  # Check if the file exists
+  if (file.exists(path2)) {
+    # Extract the file name without extension
+    file_name2 <- tools::file_path_sans_ext(basename(path2))
+    
+    # Extract the last part of the file name (after the last underscore)
+    column_name2 <- tail(strsplit(file_name2, "_")[[1]], n = 1)
+    
+    # Read the file using scan() with what = double()
+    data2 <- scan(path2, what = double(), skip = 4)  # Skip the first 4 lines
+    # Adjust other parameters based on your file format
+    
+    # Initialize the tibble with the expected number of rows if it's empty
+    if (nrow(result_tibble2) == 0) {
+      result_tibble2 <- tibble(!!column_name2 := data2)
+    } else {
+      # Add the column data to the result_tibble
+      result_tibble2[[column_name2]] <- data2
+    }
+  } else {
+    # If the file does not exist, print a warning message
+    warning(paste("File not found:", path2))
+  }
+}
+
+# Create an empty tibble to store the data
+result_tibble3 <- tibble()
+
+# Iterate over the file paths
+for (path3 in file_paths3) {
+  # Check if the file exists
+  if (file.exists(path3)) {
+    # Extract the file name without extension
+    file_name3 <- tools::file_path_sans_ext(basename(path3))
+    
+    # Extract the last part of the file name (after the last underscore)
+    column_name3 <- tail(strsplit(file_name3, "_")[[1]], n = 1)
+    
+    # Read the file using scan() with what = double()
+    data3 <- scan(path3, what = double(), skip = 4)  # Skip the first 4 lines
+    # Adjust other parameters based on your file format
+    
+    # Initialize the tibble with the expected number of rows if it's empty
+    if (nrow(result_tibble3) == 0) {
+      result_tibble3 <- tibble(!!column_name3 := data3)
+    } else {
+      # Add the column data to the result_tibble
+      result_tibble3[[column_name3]] <- data3
+    }
+  } else {
+    # If the file does not exist, print a warning message
+    warning(paste("File not found:", path3))
+  }
+}
+
+# Create an empty tibble to store the data
+result_tibble4 <- tibble()
+
+# Iterate over the file paths
+for (path4 in file_paths4) {
+  # Check if the file exists
+  if (file.exists(path4)) {
+    # Extract the file name without extension
+    file_name4 <- tools::file_path_sans_ext(basename(path4))
+    
+    # Extract the last part of the file name (after the last underscore)
+    column_name4 <- tail(strsplit(file_name4, "_")[[1]], n = 1)
+    
+    # Read the file using scan() with what = double()
+    data4 <- scan(path4, what = double(), skip = 4)  # Skip the first 4 lines
+    # Adjust other parameters based on your file format
+    
+    # Initialize the tibble with the expected number of rows if it's empty
+    if (nrow(result_tibble4) == 0) {
+      result_tibble4 <- tibble(!!column_name4 := data4)
+    } else {
+      # Add the column data to the result_tibble
+      result_tibble4[[column_name4]] <- data4
+    }
+  } else {
+    # If the file does not exist, print a warning message
+    warning(paste("File not found:", path4))
+  }
+}
+
+# Create an empty tibble to store the data
+result_tibble5 <- tibble()
+
+# Iterate over the file paths
+for (path5 in file_paths5) {
+  # Check if the file exists
+  if (file.exists(path5)) {
+    # Extract the file name without extension
+    file_name5 <- tools::file_path_sans_ext(basename(path5))
+    
+    # Extract the last part of the file name (after the last underscore)
+    column_name5 <- tail(strsplit(file_name5, "_")[[1]], n = 1)
+    
+    # Read the file using scan() with what = double()
+    data5 <- scan(path5, what = double(), skip = 4)  # Skip the first 4 lines
+    # Adjust other parameters based on your file format
+    
+    # Initialize the tibble with the expected number of rows if it's empty
+    if (nrow(result_tibble5) == 0) {
+      result_tibble5 <- tibble(!!column_name5 := data5)
+    } else {
+      # Add the column data to the result_tibble
+      result_tibble5[[column_name5]] <- data5
+    }
+  } else {
+    # If the file does not exist, print a warning message
+    warning(paste("File not found:", path5))
+  }
+}
+
+# the result_tibble tibbles are the equivalent of the matrix K in Moore et. al.'s IDL script, before Line 16
+```
+
+```{r}
+# Adjust the result_tibble tibbles by the concentrations at the relevant altitudes - this DEFINITELY only works for gb and SM, no idea what it would entail for other gases. This is very specific to how I've structured the SM and GB profiles.
+
+# define tibble of correct size ready for transformation, using result_tibble as a basis. Also define some vectors
+adjusted_tibble1 <- result_tibble1
+alt_km1 <- rep(1, l1)
+nearest_altitude_1 <- rep(1, l1)
+concentration_value1 <- rep(1, l1)
+
+adjusted_tibble2 <- result_tibble2
+alt_km2 <- rep(1, l2)
+nearest_altitude_2 <- rep(1, l2)
+concentration_value2 <- rep(1, l2)
+
+adjusted_tibble3 <- result_tibble3
+alt_km3 <- rep(1, l3)
+nearest_altitude_3 <- rep(1, l3)
+concentration_value3 <- rep(1, l3)
+
+adjusted_tibble4 <- result_tibble4
+alt_km4 <- rep(1, l4)
+nearest_altitude_4 <- rep(1, l4)
+concentration_value4 <- rep(1, l4)
+
+adjusted_tibble5 <- result_tibble5
+alt_km5 <- rep(1, l5)
+nearest_altitude_5 <- rep(1, l5)
+concentration_value5 <- rep(1, l5)
+
+# Loop through each altitude in meters
+metric1 <- 1
+for (alt_m1 in s1) {
+  
+  j1 <- (alt_m1 - (4 + 10*((alt_m1 - 110)/20))) # we'll need this later in order to read the SM and GB profiles above 100m altitude
+  alt_km1[metric1] <- alt_m1 / 1000
+  print(alt_km1[metric1])
+  print(alt_m1)
+  
+  if (alt_m1 <= 100) {
+    nearest_altitude_1[metric1] <- altitude1[(alt_m1 + 1)]
+    concentration_value1[metric1] <- concentration1[(alt_m1 + 1)]
+    } else if (alt_m1 > 100 && alt_m1%%2 == 0) {
+      nearest_altitude_1[metric1] <- altitude1[j1]
+     concentration_value1[metric1] <- concentration1[j1]
+} else {
+      print("Atmospheric Profile Does Not Contain a Measurement at this Altitude.")
+}
+  print(nearest_altitude_1[metric1])
+  print(concentration_value1[metric1])
+  
+  
+  # Divide every value in the column by the concentration value for this altitude, then multiply by 100
+  adjusted_tibble1[metric1] <- (adjusted_tibble1[metric1]/concentration_value1[metric1])*100
+  metric1 <- metric1+1
+}
+
+# Loop through each altitude in meters
+metric2 <- 1
+for (alt_m2 in s2) {
+  
+  j2 <- (alt_m2 - (4 + 10*((alt_m2 - 110)/20))) # we'll need this later in order to read the SM and GB profiles above 100m altitude
+  alt_km2[metric2] <- alt_m2 / 1000
+  print(alt_km2[metric2])
+  print(alt_m2)
+  
+  if (alt_m2 <= 100) {
+    nearest_altitude_2[metric2] <- altitude2[(alt_m2 + 1)]
+    concentration_value2[metric2] <- concentration2[(alt_m2 + 1)]
+    } else if (alt_m2 > 100 && alt_m2%%2 == 0) {
+      nearest_altitude_2[metric2] <- altitude2[j2]
+     concentration_value2[metric2] <- concentration2[j2]
+} else {
+      print("Atmospheric Profile Does Not Contain a Measurement at this Altitude.")
+}
+  print(nearest_altitude_2[metric2])
+  print(concentration_value2[metric2])
+  
+  
+  # Divide every value in the column by the concentration value for this altitude, then multiply by 100
+  adjusted_tibble2[metric2] <- (adjusted_tibble2[metric2]/concentration_value2[metric2])*100
+  metric2 <- metric2+1
+}
+
+# Loop through each altitude in meters
+metric3 <- 1
+for (alt_m3 in s3) {
+  
+  j3 <- (alt_m3 - (4 + 10*((alt_m3 - 110)/20))) # we'll need this later in order to read the SM and GB profiles above 100m altitude
+  alt_km3[metric3] <- alt_m3 / 1000
+  print(alt_km3[metric3])
+  print(alt_m3)
+  
+  if (alt_m3 <= 100) {
+    nearest_altitude_3[metric3] <- altitude3[(alt_m3 + 1)]
+    concentration_value3[metric3] <- concentration3[(alt_m3 + 1)]
+    } else if (alt_m3 > 100 && alt_m3%%2 == 0) {
+      nearest_altitude_3[metric3] <- altitude3[j3]
+     concentration_value3[metric3] <- concentration3[j3]
+} else {
+      print("Atmospheric Profile Does Not Contain a Measurement at this Altitude.")
+}
+  print(nearest_altitude_3[metric3])
+  print(concentration_value3[metric3])
+  
+  
+  # Divide every value in the column by the concentration value for this altitude, then multiply by 100
+  adjusted_tibble3[metric3] <- (adjusted_tibble3[metric3]/concentration_value3[metric3])*100
+  metric3 <- metric3+1
+}
+
+# Loop through each altitude in meters
+metric4 <- 1
+for (alt_m4 in s4) {
+  
+  j4 <- (alt_m4 - (4 + 10*((alt_m4 - 110)/20))) # we'll need this later in order to read the SM and GB profiles above 100m altitude
+  alt_km4[metric4] <- alt_m4 / 1000
+  print(alt_km4[metric4])
+  print(alt_m4)
+  
+  if (alt_m4 <= 100) {
+    nearest_altitude_4[metric4] <- altitude4[(alt_m4 + 1)]
+    concentration_value4[metric4] <- concentration4[(alt_m4 + 1)]
+    } else if (alt_m4 > 100 && alt_m4%%2 == 0) {
+      nearest_altitude_4[metric4] <- altitude4[j4]
+     concentration_value4[metric4] <- concentration4[j4]
+} else {
+      print("Atmospheric Profile Does Not Contain a Measurement at this Altitude.")
+}
+  print(nearest_altitude_4[metric4])
+  print(concentration_value4[metric4])
+  
+  
+  # Divide every value in the column by the concentration value for this altitude, then multiply by 100
+  adjusted_tibble4[metric4] <- (adjusted_tibble4[metric4]/concentration_value4[metric4])*100
+  metric4 <- metric4+1
+}
+
+# Loop through each altitude in meters
+metric5 <- 1
+for (alt_m5 in s5) {
+  
+  j5 <- (alt_m5 - (4 + 10*((alt_m5 - 110)/20))) # we'll need this later in order to read the SM and GB profiles above 100m altitude
+  alt_km5[metric5] <- alt_m5 / 1000
+  print(alt_km5[metric5])
+  print(alt_m5)
+  
+  if (alt_m5 <= 100) {
+    nearest_altitude_5[metric5] <- altitude5[(alt_m5 + 1)]
+    concentration_value5[metric5] <- concentration5[(alt_m5 + 1)]
+    } else if (alt_m5 > 100 && alt_m5%%2 == 0) {
+      nearest_altitude_5[metric5] <- altitude5[j5]
+     concentration_value5[metric5] <- concentration5[j5]
+} else {
+      print("Atmospheric Profile Does Not Contain a Measurement at this Altitude.")
+}
+  print(nearest_altitude_5[metric5])
+  print(concentration_value5[metric5])
+  
+  
+  # Divide every value in the column by the concentration value for this altitude, then multiply by 100
+  adjusted_tibble5[metric5] <- (adjusted_tibble5[metric5]/concentration_value5[metric5])*100
+  metric5 <- metric5+1
+}
+
+# adjusted_tibble is the equivalent of K in the IDL script after line 16
+```
+
+
+```{r}
+x <- seq(645, 1500, by = 0.25)
+
+adjusted_tibble1c <- as.data.frame(adjusted_tibble1)
+Z1 <- unname(unlist(adjusted_tibble1c))
+
+hm_data_1 <- expand.grid(X=x, Y=s1)
+hm_data_1$Z <- Z1
+max1 <- max(hm_data_1$Z)
+min1 <- min(hm_data_1$Z)
+
+hm1 <- ggplot(hm_data_1, mapping = aes(X, Y, fill=Z)) +
+  geom_tile() +
+  scale_fill_gradient2(limits = c(-0.3, 0.3), low = "black", mid = "white", high = "red", midpoint = 0) +
+    labs(title = "1 minute", x = "Wavenumber / cm-1", y = "Altitude / m") +
+  theme(text = element_text(size = 18, colour = "black"),
+        plot.title = element_text(size = 22, colour = "black", hjust = 0.5),
+        axis.title.x = element_text(size = 20, colour ="black"),
+        axis.text = element_text(size = 18, colour = "black")) +
+  ylim(0, 260)
+
+adjusted_tibble2c <- as.data.frame(adjusted_tibble2)
+Z2 <- unname(unlist(adjusted_tibble2c))
+
+hm_data_2 <- expand.grid(X=x, Y=s2)
+hm_data_2$Z <- Z2
+max2 <- max(hm_data_2$Z)
+min2 <- min(hm_data_2$Z)
+
+hm2 <- ggplot(hm_data_2, mapping = aes(X, Y, fill=Z)) +
+  geom_tile() +
+  scale_fill_gradient2(limits = c(-0.3, 0.3), low = "black", mid = "white", high = "red", midpoint = 0) +
+    labs(title = "15 minutes", x = "Wavenumber / cm-1", y = "Altitude / m") +
+  theme(text = element_text(size = 18, colour = "black"),
+        plot.title = element_text(size = 22, colour = "black", hjust = 0.5),
+        axis.title.x = element_text(size = 20, colour ="black"),
+        axis.text = element_text(size = 18, colour = "black")) +
+  ylim(0, 260)
+
+adjusted_tibble3c <- as.data.frame(adjusted_tibble3)
+Z3 <- unname(unlist(adjusted_tibble3c))
+
+hm_data_3 <- expand.grid(X=x, Y=s3)
+hm_data_3$Z <- Z3
+max3 <- max(hm_data_3$Z)
+min3 <- min(hm_data_3$Z)
+
+hm3 <- ggplot(hm_data_3, mapping = aes(X, Y, fill=Z)) +
+  geom_tile() +
+  scale_fill_gradient2(limits = c(-0.3, 0.3), low = "black", mid = "white", high = "red", midpoint = 0) +
+    labs(title = "30 minutes", x = "Wavenumber / cm-1", y = "Altitude / m") +
+  theme(text = element_text(size = 18, colour = "black"),
+        plot.title = element_text(size = 22, colour = "black", hjust = 0.5),
+        axis.title.x = element_text(size = 20, colour ="black"),
+        axis.text = element_text(size = 18, colour = "black")) +
+  ylim(0, 260)
+
+adjusted_tibble4c <- as.data.frame(adjusted_tibble4)
+Z4 <- unname(unlist(adjusted_tibble4c))
+
+hm_data_4 <- expand.grid(X=x, Y=s4)
+hm_data_4$Z <- Z4
+max4 <- max(hm_data_4$Z)
+min4 <- min(hm_data_4$Z)
+
+hm4 <- ggplot(hm_data_4, mapping = aes(X, Y, fill=Z)) +
+  geom_tile() +
+  scale_fill_gradient2(limits = c(-0.3, 0.3), low = "black", mid = "white", high = "red", midpoint = 0) +
+    labs(title = "45 minutes", x = "Wavenumber / cm-1", y = "Altitude / m") +
+  theme(text = element_text(size = 18, colour = "black"),
+        plot.title = element_text(size = 22, colour = "black", hjust = 0.5),
+        axis.title.x = element_text(size = 20, colour ="black"),
+        axis.text = element_text(size = 18, colour = "black")) +
+  ylim(0, 260)
+
+adjusted_tibble5c <- as.data.frame(adjusted_tibble5)
+Z5 <- unname(unlist(adjusted_tibble5c))
+
+hm_data_5 <- expand.grid(X=x, Y=s5)
+hm_data_5$Z <- Z5
+max5 <- max(hm_data_5$Z)
+min5 <- min(hm_data_5$Z)
+
+hm5 <- ggplot(hm_data_5, mapping = aes(X, Y, fill=Z)) +
+  geom_tile() +
+  scale_fill_gradient2(limits = c(-0.3, 0.3), low = "black", mid = "white", high = "red", midpoint = 0) +
+    labs(title = "60 minutes", x = "Wavenumber / cm-1", y = "Altitude / m") +
+  theme(text = element_text(size = 18, colour = "black"),
+        plot.title = element_text(size = 22, colour = "black", hjust = 0.5),
+        axis.title.x = element_text(size = 20, colour ="black"),
+        axis.text = element_text(size = 18, colour = "black")) +
+  ylim(0, 260)
+
+# Create png file with all Jacobian Graphs for this scenario
+
+png(filename = "SM_B100J_Y_v2.png", width = 4800, height = 4800, pointsize = 1, res = 300)
+
+ggarrange(ggarrange(hm1, hm2, hm3, ncol=3), ggarrange(hm4, hm5, ncol=2), nrow=2)
+
+dev.off()
+```

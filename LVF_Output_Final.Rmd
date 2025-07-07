@@ -1,0 +1,92 @@
+---
+title: "LVF_Output_Final"
+output: html_document
+date: "2024-07-01"
+---
+
+
+
+```{r}
+library(tidyverse)
+library(tibble)
+library(fs)
+library(ggplot2)
+library(dplyr)
+library(ggpubr)
+library(ggbreak)
+```
+
+```{r}
+# Read in data
+
+snr_data <- read.csv("SNR_GB_B100_N.csv", header = TRUE)
+```
+
+
+```{r}
+# Rename columns to suitable format
+
+snr_data2 <- snr_data %>% rename(
+  No_Agent_SNR_Achieved = SNR_Ach_None,
+  SNR_Required_1Min = SNR_Req_1,
+  SNR_Achieved_1Min = SNR_Ach_1,
+  SNR_Required_15Min = SNR_Req_15,
+  SNR_Achieved_15Min = SNR_Ach_15,
+  SNR_Required_30Min = SNR_Req_30,
+  SNR_Achieved_30Min = SNR_Ach_30,
+  SNR_Required_45Min = SNR_Req_45,
+  SNR_Achieved_45Min = SNR_Ach_45,
+  SNR_Required_60Min = SNR_Req_60,
+  SNR_Achieved_60Min = SNR_Ach_60,
+  Pixel_Centre_Wavelength = Pix_Cent_Wavl
+)
+
+snr_data2["Pixel_Centre_Wavelength_Metres"] <- snr_data2$Pixel_Centre_Wavelength / 1000
+snr_data2["Pixel_Centre_Wavenumber"] <- 10000/(snr_data2$Pixel_Centre_Wavelength_Metres)
+
+```
+
+
+```{r}
+# plot the data - SNR required
+
+snr_req <- ggplot() +
+  xlim(645, 1500) +
+  ylim(1e5, 1e15) +
+  scale_y_continuous(trans='log10') +
+  geom_line(data = snr_data2, aes(x = Pixel_Centre_Wavenumber, y = SNR_Required_1Min, colour ="1 Min")) +
+  geom_line(data = snr_data2, aes(x = Pixel_Centre_Wavenumber, y = SNR_Required_15Min, colour ="15 Mins")) +
+  geom_line(data = snr_data2, aes(x = Pixel_Centre_Wavenumber, y = SNR_Required_30Min, colour ="30 Mins")) +
+  geom_line(data = snr_data2, aes(x = Pixel_Centre_Wavenumber, y = SNR_Required_45Min, colour ="45 Mins")) +
+  geom_line(data = snr_data2, aes(x = Pixel_Centre_Wavenumber, y = SNR_Required_60Min, colour ="60 Mins")) +
+  scale_color_manual(name = "Sample Time", breaks = c("1 Min", "15 Mins", "30 Mins", "45 Mins", "60 Mins"), values = c("1 Min" = "skyblue2", "15 Mins" = "springgreen", "30 Mins" = "darkorchid4", "45 Mins" = "magenta", "60 Mins" = "orange")) +
+  labs(title = "100 kg sarin release, bulk ground areas", x = "Wavenumber / cm-1", y = "SNR Required") +
+  theme(text = element_text(size = 20, colour = "black"),
+        plot.title = element_text(size = 24, colour = "black", hjust = 0.5),
+        axis.title.x = element_text(size = 22, colour ="black"),
+        axis.text = element_text(size = 20, colour = "black"))
+snr_req
+
+```
+
+```{r}
+# plot the data
+
+snr_ach <- ggplot() +
+  xlim(645, 1500) +
+  ylim(0, 10000) +
+  geom_line(data = snr_data2, aes(x = Pixel_Centre_Wavenumber, y = No_Agent_SNR_Achieved, colour ="No_Agent")) +
+  geom_line(data = snr_data2, aes(x = Pixel_Centre_Wavenumber, y = SNR_Achieved_1Min, colour ="1 Min")) +
+  geom_line(data = snr_data2, aes(x = Pixel_Centre_Wavenumber, y = SNR_Achieved_15Min, colour ="15 Mins")) +
+  geom_line(data = snr_data2, aes(x = Pixel_Centre_Wavenumber, y = SNR_Achieved_30Min, colour ="30 Mins")) +
+  geom_line(data = snr_data2, aes(x = Pixel_Centre_Wavenumber, y = SNR_Achieved_45Min, colour ="45 Mins")) +
+  geom_line(data = snr_data2, aes(x = Pixel_Centre_Wavenumber, y = SNR_Achieved_60Min, colour ="60 Mins")) +
+  scale_color_manual(name = "Sample Time", breaks = c("No Agent", "1 Min", "15 Mins", "30 Mins", "45 Mins", "60 Mins"), values = c("No Agent" = "black", "1 Min" = "skyblue2", "15 Mins" = "springgreen", "30 Mins" = "darkorchid4", "45 Mins" = "magenta", "60 Mins" = "orange")) +
+  labs(title = "100 kg sarin release, bulk ground areas", x = "Wavenumber / cm-1", y = "SNR Achieved") +
+  theme(text = element_text(size = 20, colour = "black"),
+        plot.title = element_text(size = 24, colour = "black", hjust = 0.5),
+        axis.title.x = element_text(size = 22, colour ="black"),
+        axis.text = element_text(size = 20, colour = "black"))
+snr_ach
+
+```

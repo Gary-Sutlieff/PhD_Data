@@ -1,0 +1,123 @@
+---
+title: "raw_data_boxplots"
+output: html_document
+date: "2024-02-13"
+---
+```{r}
+library(ggplot2)
+```
+
+```{r}
+Lat0 <- read.csv("Lat0.csv", header=TRUE)
+Lat30 <- read.csv("Lat30.csv", header=TRUE)
+LatN30 <- read.csv("LatN30.csv", header=TRUE)
+Lat60 <- read.csv("Lat60.csv", header=TRUE)
+LatN55 <- read.csv("LatN55.csv", header=TRUE)
+```
+
+```{r}
+Min_A <- Lat60$X200[1]/86400
+Perc25_A <- Lat60$X200[2]/86400
+Med_A <- Lat60$X200[3]/86400
+Perc75_A <- Lat60$X200[4]/86400
+Max_A <- Lat60$X200[5]/86400
+Mean_A <- Lat60$X200[6]/86400
+
+Min_B <- Lat60$X250[1]/86400
+Perc25_B <- Lat60$X250[2]/86400
+Med_B <- Lat60$X250[3]/86400
+Perc75_B <- Lat60$X250[4]/86400
+Max_B <- Lat60$X250[5]/86400
+Mean_B <- Lat60$X250[6]/86400
+
+Min_C <- Lat60$X300[1]/86400
+Perc25_C <- Lat60$X300[2]/86400
+Med_C <- Lat60$X300[3]/86400
+Perc75_C <- Lat60$X300[4]/86400
+Max_C <- Lat60$X300[5]/86400
+Mean_C <- Lat60$X300[6]/86400
+
+Min_D <- Lat60$X350[1]/86400
+Perc25_D <- Lat60$X350[2]/86400
+Med_D <- Lat60$X350[3]/86400
+Perc75_D <- Lat60$X350[4]/86400
+Max_D <- Lat60$X350[5]/86400
+Mean_D <- Lat60$X350[6]/86400
+
+Min_E <- Lat60$X400[1]/86400
+Perc25_E <- Lat60$X400[2]/86400
+Med_E <- Lat60$X400[3]/86400
+Perc75_E <- Lat60$X400[4]/86400
+Max_E <- Lat60$X400[5]/86400
+Mean_E <- Lat60$X400[6]/86400
+
+Min_F <- Lat60$X450[1]/86400
+Perc25_F <- Lat60$X450[2]/86400
+Med_F <- Lat60$X450[3]/86400
+Perc75_F <- Lat60$X450[4]/86400
+Max_F <- Lat60$X450[5]/86400
+Mean_F <- Lat60$X450[6]/86400
+
+Min_G <- Lat60$X500[1]/86400
+Perc25_G <- Lat60$X500[2]/86400
+Med_G <- Lat60$X500[3]/86400
+Perc75_G <- Lat60$X500[4]/86400
+Max_G <- Lat60$X500[5]/86400
+Mean_G <- Lat60$X500[6]/86400
+
+Min_H <- Lat60$X550[1]/86400
+Perc25_H <- Lat60$X550[2]/86400
+Med_H <- Lat60$X550[3]/86400
+Perc75_H <- Lat60$X550[4]/86400
+Max_H <- Lat60$X550[5]/86400
+Mean_H <- Lat60$X550[6]/86400
+
+Min_I <- Lat60$X600[1]/86400
+Perc25_I <- Lat60$X600[2]/86400
+Med_I <- Lat60$X600[3]/86400
+Perc75_I <- Lat60$X600[4]/86400
+Max_I <- Lat60$X600[5]/86400
+Mean_I <- Lat60$X600[6]/86400
+
+Min_J <- Lat60$X650[1]/86400
+Perc25_J <- Lat60$X650[2]/86400
+Med_J <- Lat60$X650[3]/86400
+Perc75_J <- Lat60$X650[4]/86400
+Max_J <- Lat60$X650[5]/86400
+Mean_J <- Lat60$X650[6]/86400
+
+Min_K <- Lat60$X700[1]/86400
+Perc25_K <- Lat60$X700[2]/86400
+Med_K <- Lat60$X700[3]/86400
+Perc75_K <- Lat60$X700[4]/86400
+Max_K <- Lat60$X700[5]/86400
+Mean_K <- Lat60$X700[6]/86400
+```
+
+```{r}
+data_ggplot2_b <- data.frame(Altitude = c("200km", "250km", "300km", "350km", "400km", "450km", "500km", "550km", "600km", "650km", "700km"),  # Create data frame of values
+                             whisker_lower = c(Min_A, Min_B, Min_C, Min_D, Min_E, Min_F, Min_G, Min_H, Min_I, Min_J, Min_K),
+                             quartile_1st = c(Perc25_A, Perc25_B, Perc25_C, Perc25_D, Perc25_E, Perc25_F, Perc25_G, Perc25_H, Perc25_I, Perc25_J, Perc25_K),
+                             median = c(Med_A, Med_B, Med_C, Med_D, Med_E, Med_F, Med_G, Med_H, Med_I, Med_J, Med_K),
+                             quartile_3rd = c(Perc75_A, Perc75_B, Perc75_C, Perc75_D, Perc75_E, Perc75_F, Perc75_G, Perc75_H, Perc75_I, Perc75_J, Perc75_K),
+                             whisker_upper = c(Max_A, Max_B, Max_C, Max_D, Max_E, Max_F, Max_G, Max_H, Max_I, Max_J, Max_K),
+                             #Add in handcalc values
+Calculated_Value = c(Mean_A, Mean_B, Mean_C, Mean_D, Mean_E, Mean_F, Mean_G, Mean_H, Mean_I, Mean_J, Mean_K))
+data_ggplot2_b      
+```
+
+```{r}
+ggplot(data_ggplot2_b,                             # Draw multiple ggplot2 boxplots
+       aes(x = Altitude,
+           ymin = whisker_lower,
+           lower = quartile_1st,
+           middle = median,
+           upper = quartile_3rd,
+           ymax = whisker_upper,
+           fill = Altitude)) +
+  geom_boxplot(stat = "identity") +
+  geom_line(data = data_ggplot2_b, mapping = aes(x = Altitude, y = Calculated_Value, group = 1, colour = "Mean Value"), linetype=1, linewidth=0.7) +
+  scale_colour_manual(values = "grey32") +
+  ggtitle("Revisit Time against Altitude at 60 Degrees Latitude") +
+  labs(y= "Revisit Time (Days)", x = "Altitude (km)", colour = NULL)
+```

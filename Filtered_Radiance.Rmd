@@ -1,0 +1,221 @@
+---
+title: "Filtered_Radiance"
+output: html_document
+date: "2025-05-09"
+---
+
+```{r}
+library(tidyverse)
+library(tibble)
+library(fs)
+library(ggplot2)
+library(dplyr)
+library(ggpubr)
+library(ggbreak)
+```
+
+```{r}
+#read in all flux data
+flux_tbl <- read.csv("Flux_Sheet.csv", header=TRUE)
+
+#assign values for solid angle subtended by one pixel and entrance pupil area
+sr <- 9.46746e-08
+a <- 1.26e-01
+```
+
+```{r}
+flux_tbl2 <- flux_tbl[,2:49] # remove wavelength column
+flux_tbl2a <- flux_tbl2 / sr # divide by solid angle
+flux_tbl2b <- flux_tbl2a / a # divide by area, these two calculations produce radiance (not spectral)
+
+flux_tbl3 <- flux_tbl2b / 11 # divide by wavelength step (11 nm) to get spectral radiance in wavelength units
+flux_tbl3$Wavelength <- flux_tbl$Wavelength # add wavelength back to table
+
+#rename columns from flux to radiance
+
+flux_tbl3 <- flux_tbl3 %>% rename(
+  GB_B30N_Rad_1 = GB_B30N_Flux_1,
+  GB_B30N_Rad_15 = GB_B30N_Flux_15,
+  GB_B30N_Rad_30 = GB_B30N_Flux_30,
+  GB_B30N_Rad_45 = GB_B30N_Flux_45,
+  GB_B30N_Rad_60 = GB_B30N_Flux_60,
+  GB_B30N_Rad_None = GB_B30N_Flux_None,
+  GB_B100N_Rad_1 = GB_B100N_Flux_1,
+  GB_B100N_Rad_15 = GB_B100N_Flux_15,
+  GB_B100N_Rad_30 = GB_B100N_Flux_30,
+  GB_B100N_Rad_45 = GB_B100N_Flux_45,
+  GB_B100N_Rad_60 = GB_B100N_Flux_60,
+  GB_B100N_Rad_None = GB_B100N_Flux_None,
+  GB_I30N_Rad_1 = GB_I30N_Flux_1,
+  GB_I30N_Rad_15 = GB_I30N_Flux_15,
+  GB_I30N_Rad_30 = GB_I30N_Flux_30,
+  GB_I30N_Rad_45 = GB_I30N_Flux_45,
+  GB_I30N_Rad_60 = GB_I30N_Flux_60,
+  GB_I30N_Rad_None = GB_I30N_Flux_None,
+  GB_I100N_Rad_1 = GB_I100N_Flux_1,
+  GB_I100N_Rad_15 = GB_I100N_Flux_15,
+  GB_I100N_Rad_30 = GB_I100N_Flux_30,
+  GB_I100N_Rad_45 = GB_I100N_Flux_45,
+  GB_I100N_Rad_60 = GB_I100N_Flux_60,
+  GB_I100N_Rad_None = GB_I100N_Flux_None,
+  SM_B30N_Rad_1 = SM_B30N_Flux_1,
+  SM_B30N_Rad_15 = SM_B30N_Flux_15,
+  SM_B30N_Rad_30 = SM_B30N_Flux_30,
+  SM_B30N_Rad_45 = SM_B30N_Flux_45,
+  SM_B30N_Rad_60 = SM_B30N_Flux_60,
+  SM_B30N_Rad_None = SM_B30N_Flux_None,
+  SM_B100N_Rad_1 = SM_B100N_Flux_1,
+  SM_B100N_Rad_15 = SM_B100N_Flux_15,
+  SM_B100N_Rad_30 = SM_B100N_Flux_30,
+  SM_B100N_Rad_45 = SM_B100N_Flux_45,
+  SM_B100N_Rad_60 = SM_B100N_Flux_60,
+  SM_B100N_Rad_None = SM_B100N_Flux_None,
+  SM_I30N_Rad_1 = SM_I30N_Flux_1,
+  SM_I30N_Rad_15 = SM_I30N_Flux_15,
+  SM_I30N_Rad_30 = SM_I30N_Flux_30,
+  SM_I30N_Rad_45 = SM_I30N_Flux_45,
+  SM_I30N_Rad_60 = SM_I30N_Flux_60,
+  SM_I30N_Rad_None = SM_I30N_Flux_None,
+  SM_I100N_Rad_1 = SM_I100N_Flux_1,
+  SM_I100N_Rad_15 = SM_I100N_Flux_15,
+  SM_I100N_Rad_30 = SM_I100N_Flux_30,
+  SM_I100N_Rad_45 = SM_I100N_Flux_45,
+  SM_I100N_Rad_60 = SM_I100N_Flux_60,
+  SM_I100N_Rad_None = SM_I100N_Flux_None
+)
+
+
+# calculate corresponding wavenumbers for each wavelength
+wavenum <- (1e7)/(flux_tbl$Wavelength)
+
+#divide the (non-spectral) radiance by these wavenumbers to get spectral radiance in wavenumber units
+flux_tbl4 <- flux_tbl2b / wavenum
+
+#rename columns from flux to radiance
+
+flux_tbl4$Wavenumber <- wavenum # add wavenumber column onto table for plotting purposes
+
+flux_tbl4 <- flux_tbl4 %>% rename(
+  GB_B30N_Rad_1 = GB_B30N_Flux_1,
+  GB_B30N_Rad_15 = GB_B30N_Flux_15,
+  GB_B30N_Rad_30 = GB_B30N_Flux_30,
+  GB_B30N_Rad_45 = GB_B30N_Flux_45,
+  GB_B30N_Rad_60 = GB_B30N_Flux_60,
+  GB_B30N_Rad_None = GB_B30N_Flux_None,
+  GB_B100N_Rad_1 = GB_B100N_Flux_1,
+  GB_B100N_Rad_15 = GB_B100N_Flux_15,
+  GB_B100N_Rad_30 = GB_B100N_Flux_30,
+  GB_B100N_Rad_45 = GB_B100N_Flux_45,
+  GB_B100N_Rad_60 = GB_B100N_Flux_60,
+  GB_B100N_Rad_None = GB_B100N_Flux_None,
+  GB_I30N_Rad_1 = GB_I30N_Flux_1,
+  GB_I30N_Rad_15 = GB_I30N_Flux_15,
+  GB_I30N_Rad_30 = GB_I30N_Flux_30,
+  GB_I30N_Rad_45 = GB_I30N_Flux_45,
+  GB_I30N_Rad_60 = GB_I30N_Flux_60,
+  GB_I30N_Rad_None = GB_I30N_Flux_None,
+  GB_I100N_Rad_1 = GB_I100N_Flux_1,
+  GB_I100N_Rad_15 = GB_I100N_Flux_15,
+  GB_I100N_Rad_30 = GB_I100N_Flux_30,
+  GB_I100N_Rad_45 = GB_I100N_Flux_45,
+  GB_I100N_Rad_60 = GB_I100N_Flux_60,
+  GB_I100N_Rad_None = GB_I100N_Flux_None,
+  SM_B30N_Rad_1 = SM_B30N_Flux_1,
+  SM_B30N_Rad_15 = SM_B30N_Flux_15,
+  SM_B30N_Rad_30 = SM_B30N_Flux_30,
+  SM_B30N_Rad_45 = SM_B30N_Flux_45,
+  SM_B30N_Rad_60 = SM_B30N_Flux_60,
+  SM_B30N_Rad_None = SM_B30N_Flux_None,
+  SM_B100N_Rad_1 = SM_B100N_Flux_1,
+  SM_B100N_Rad_15 = SM_B100N_Flux_15,
+  SM_B100N_Rad_30 = SM_B100N_Flux_30,
+  SM_B100N_Rad_45 = SM_B100N_Flux_45,
+  SM_B100N_Rad_60 = SM_B100N_Flux_60,
+  SM_B100N_Rad_None = SM_B100N_Flux_None,
+  SM_I30N_Rad_1 = SM_I30N_Flux_1,
+  SM_I30N_Rad_15 = SM_I30N_Flux_15,
+  SM_I30N_Rad_30 = SM_I30N_Flux_30,
+  SM_I30N_Rad_45 = SM_I30N_Flux_45,
+  SM_I30N_Rad_60 = SM_I30N_Flux_60,
+  SM_I30N_Rad_None = SM_I30N_Flux_None,
+  SM_I100N_Rad_1 = SM_I100N_Flux_1,
+  SM_I100N_Rad_15 = SM_I100N_Flux_15,
+  SM_I100N_Rad_30 = SM_I100N_Flux_30,
+  SM_I100N_Rad_45 = SM_I100N_Flux_45,
+  SM_I100N_Rad_60 = SM_I100N_Flux_60,
+  SM_I100N_Rad_None = SM_I100N_Flux_None
+)
+
+```
+
+```{r}
+# Calculate Differences in Radiance
+
+Diff_tbl <- tibble(
+Wavenumber = flux_tbl4$Wavenumber,
+GB_B30N_Diff_1 = flux_tbl4$GB_B30N_Rad_None - flux_tbl4$GB_B30N_Rad_1,
+GB_B30N_Diff_15 = flux_tbl4$GB_B30N_Rad_None - flux_tbl4$GB_B30N_Rad_15,
+GB_B30N_Diff_30 = flux_tbl4$GB_B30N_Rad_None - flux_tbl4$GB_B30N_Rad_30,
+GB_B30N_Diff_45 = flux_tbl4$GB_B30N_Rad_None - flux_tbl4$GB_B30N_Rad_45,
+GB_B30N_Diff_60 = flux_tbl4$GB_B30N_Rad_None - flux_tbl4$GB_B30N_Rad_60,
+GB_B100N_Diff_1 = flux_tbl4$GB_B100N_Rad_None - flux_tbl4$GB_B100N_Rad_1,
+GB_B100N_Diff_15 = flux_tbl4$GB_B100N_Rad_None - flux_tbl4$GB_B100N_Rad_15,
+GB_B100N_Diff_30 = flux_tbl4$GB_B100N_Rad_None - flux_tbl4$GB_B100N_Rad_30,
+GB_B100N_Diff_45 = flux_tbl4$GB_B100N_Rad_None - flux_tbl4$GB_B100N_Rad_45,
+GB_B100N_Diff_60 = flux_tbl4$GB_B100N_Rad_None - flux_tbl4$GB_B100N_Rad_60,
+GB_I30N_Diff_1 = flux_tbl4$GB_I30N_Rad_None - flux_tbl4$GB_I30N_Rad_1,
+GB_I30N_Diff_15 = flux_tbl4$GB_I30N_Rad_None - flux_tbl4$GB_I30N_Rad_15,
+GB_I30N_Diff_30 = flux_tbl4$GB_I30N_Rad_None - flux_tbl4$GB_I30N_Rad_30,
+GB_I30N_Diff_45 = flux_tbl4$GB_I30N_Rad_None - flux_tbl4$GB_I30N_Rad_45,
+GB_I30N_Diff_60 = flux_tbl4$GB_I30N_Rad_None - flux_tbl4$GB_I30N_Rad_60,
+GB_I100N_Diff_1 = flux_tbl4$GB_I100N_Rad_None - flux_tbl4$GB_I100N_Rad_1,
+GB_I100N_Diff_15 = flux_tbl4$GB_I100N_Rad_None - flux_tbl4$GB_I100N_Rad_15,
+GB_I100N_Diff_30 = flux_tbl4$GB_I100N_Rad_None - flux_tbl4$GB_I100N_Rad_30,
+GB_I100N_Diff_45 = flux_tbl4$GB_I100N_Rad_None - flux_tbl4$GB_I100N_Rad_45,
+GB_I100N_Diff_60 = flux_tbl4$GB_I100N_Rad_None - flux_tbl4$GB_I100N_Rad_60,
+SM_B30N_Diff_1 = flux_tbl4$SM_B30N_Rad_None - flux_tbl4$SM_B30N_Rad_1,
+SM_B30N_Diff_15 = flux_tbl4$SM_B30N_Rad_None - flux_tbl4$SM_B30N_Rad_15,
+SM_B30N_Diff_30 = flux_tbl4$SM_B30N_Rad_None - flux_tbl4$SM_B30N_Rad_30,
+SM_B30N_Diff_45 = flux_tbl4$SM_B30N_Rad_None - flux_tbl4$SM_B30N_Rad_45,
+SM_B30N_Diff_60 = flux_tbl4$SM_B30N_Rad_None - flux_tbl4$SM_B30N_Rad_60,
+SM_B100N_Diff_1 = flux_tbl4$SM_B100N_Rad_None - flux_tbl4$SM_B100N_Rad_1,
+SM_B100N_Diff_15 = flux_tbl4$SM_B100N_Rad_None - flux_tbl4$SM_B100N_Rad_15,
+SM_B100N_Diff_30 = flux_tbl4$SM_B100N_Rad_None - flux_tbl4$SM_B100N_Rad_30,
+SM_B100N_Diff_45 = flux_tbl4$SM_B100N_Rad_None - flux_tbl4$SM_B100N_Rad_45,
+SM_B100N_Diff_60 = flux_tbl4$SM_B100N_Rad_None - flux_tbl4$SM_B100N_Rad_60,
+SM_I30N_Diff_1 = flux_tbl4$SM_I30N_Rad_None - flux_tbl4$SM_I30N_Rad_1,
+SM_I30N_Diff_15 = flux_tbl4$SM_I30N_Rad_None - flux_tbl4$SM_I30N_Rad_15,
+SM_I30N_Diff_30 = flux_tbl4$SM_I30N_Rad_None - flux_tbl4$SM_I30N_Rad_30,
+SM_I30N_Diff_45 = flux_tbl4$SM_I30N_Rad_None - flux_tbl4$SM_I30N_Rad_45,
+SM_I30N_Diff_60 = flux_tbl4$SM_I30N_Rad_None - flux_tbl4$SM_I30N_Rad_60,
+SM_I100N_Diff_1 = flux_tbl4$SM_I100N_Rad_None - flux_tbl4$SM_I100N_Rad_1,
+SM_I100N_Diff_15 = flux_tbl4$SM_I100N_Rad_None - flux_tbl4$SM_I100N_Rad_15,
+SM_I100N_Diff_30 = flux_tbl4$SM_I100N_Rad_None - flux_tbl4$SM_I100N_Rad_30,
+SM_I100N_Diff_45 = flux_tbl4$SM_I100N_Rad_None - flux_tbl4$SM_I100N_Rad_45,
+SM_I100N_Diff_60 = flux_tbl4$SM_I100N_Rad_None - flux_tbl4$SM_I100N_Rad_60
+)
+
+```
+
+```{r}
+# plot differences in radiance
+p1a <- ggplot() +
+  xlim(645, 1500) +
+#  scale_y_cut(breaks = 0.003, which = 1, scales = c(0.5, 1)) +
+  geom_line(data = Diff_tbl, aes(x = Wavenumber, y = GB_I100N_Diff_1, colour ="1 Min")) +
+  geom_line(data = Diff_tbl, aes(x = Wavenumber, y = GB_I100N_Diff_15, colour ="15 Mins")) +
+  geom_line(data = Diff_tbl, aes(x = Wavenumber, y = GB_I100N_Diff_30, colour ="30 Mins")) +
+  geom_line(data = Diff_tbl, aes(x = Wavenumber, y = GB_I100N_Diff_45, colour ="45 Mins")) +
+  geom_line(data = Diff_tbl, aes(x = Wavenumber, y = GB_I100N_Diff_60, colour ="60 Mins")) +
+#  geom_line(data = IASI_Noise, aes(x = V1, y = Noise, colour = "Noise")) +
+  scale_color_manual(name = "Sample Time", breaks = c("1 Min", "15 Mins", "30 Mins", "45 Mins", "60 Mins"), values = c("1 Min" = "skyblue2", "15 Mins" = "springgreen", "30 Mins" = "darkorchid4", "45 Mins" = "magenta", "60 Mins" = "orange")) +
+  labs(title = "100 kg sarin release, individual buildings", x = "Wavenumber / cm-1", y = "Radiance Difference / nW/(cm2 sr cm-1)") +
+  theme(text = element_text(size = 16, colour = "black"),
+        plot.title = element_text(size = 12, colour = "black", hjust = 0.2),
+        axis.title.x = element_text(size = 12, colour ="black"),
+        axis.title.y = element_text(size = 14, colour ="black"),
+        axis.text = element_text(size = 16, colour = "black"))
+p1a
+
+```
+

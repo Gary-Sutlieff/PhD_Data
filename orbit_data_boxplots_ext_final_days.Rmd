@@ -1,0 +1,268 @@
+---
+title: "orbit_data_boxplots.Rmd"
+output: html_document
+date: "2023-09-19"
+---
+
+# Load ggplot2 package for plotting box plots
+```{r}
+library(ggplot2)
+```
+
+# Load data for scenario with no deorbiting at 200 km altitude
+```{r}
+Min_200km <- read.csv("200/200km_Min_final.csv", header=TRUE, skip=24)
+Perc25_200km <- read.csv("200/200km_25perc_final.csv", header=TRUE, skip=24)
+Med_200km <- read.csv("200/200km_Med_final.csv", header=TRUE, skip=24)
+Perc75_200km <- read.csv("200/200km_75perc_final.csv", header=TRUE, skip=24)
+Max_200km <- read.csv("200/200km_Max_final.csv", header=TRUE, skip=24)
+```
+
+# Filter data only for third column (value of revisit time), and remove any values that equal the scenario duration (i.e. remove data points where a revisit was never achieved - this is only relevant for the deorbit scenario, I believe, but I'm including it here for safety)
+```{r}
+Time_200km_Min <- subset(Min_200km$FOM.Value..sec., Min_200km$FOM.Value..sec. <9676800)/86400
+Time_200km_25perc <- subset(Perc25_200km$FOM.Value..sec., Perc25_200km$FOM.Value..sec. <9676800)/86400
+Time_200km_Med <- subset(Med_200km$FOM.Value..sec., Med_200km$FOM.Value..sec. <9676800)/86400
+Time_200km_75perc <- subset(Perc75_200km$FOM.Value..sec., Perc75_200km$FOM.Value..sec. <9676800)/86400
+Time_200km_Max <- subset(Max_200km$FOM.Value..sec., Max_200km$FOM.Value..sec. <9676800)/86400
+```
+
+#Also output grid of sampling points
+```{r}
+Grid_Points_X <- Min_200km$Longitude..deg.
+Grid_Points_Y <- Min_200km$Latitude..deg.
+Sample_Coords <- data.frame(Latitude <- c(Grid_Points_Y), Longitude <- c(Grid_Points_X))
+write.csv(Sample_Coords, file="Sample_Grid.csv")
+```
+
+# Calculate Averages of each parameter
+```{r}
+Min_A <- mean(Time_200km_Min)
+Perc25_A <- mean(Time_200km_25perc)
+Med_A <- mean(Time_200km_Med)
+Perc75_A <- mean(Time_200km_75perc)
+Max_A <- mean(Time_200km_Max)
+```
+
+# Repeat Process for 250 km
+```{r}
+Min_250km <- read.csv("250/250km_Min_final.csv", header=TRUE, skip=24)
+Perc25_250km <- read.csv("250/250km_25perc_final.csv", header=TRUE, skip=24)
+Med_250km <- read.csv("250/250km_Med_final.csv", header=TRUE, skip=24)
+Perc75_250km <- read.csv("250/250km_75perc_final.csv", header=TRUE, skip=24)
+Max_250km <- read.csv("250/250km_Max_final.csv", header=TRUE, skip=24)
+Time_250km_Min <- subset(Min_250km$FOM.Value..sec., Min_250km$FOM.Value..sec. <9676800)/86400
+Time_250km_25perc <- subset(Perc25_250km$FOM.Value..sec., Perc25_250km$FOM.Value..sec. <9676800)/86400
+Time_250km_Med <- subset(Med_250km$FOM.Value..sec., Med_250km$FOM.Value..sec. <9676800)/86400
+Time_250km_75perc <- subset(Perc75_250km$FOM.Value..sec., Perc75_250km$FOM.Value..sec. <9676800)/86400
+Time_250km_Max <- subset(Max_250km$FOM.Value..sec., Max_250km$FOM.Value..sec. <9676800)/86400
+Min_B <- mean(Time_250km_Min)
+Perc25_B <- mean(Time_250km_25perc)
+Med_B <- mean(Time_250km_Med)
+Perc75_B <- mean(Time_250km_75perc)
+Max_B <- mean(Time_250km_Max)
+```
+
+# Repeat Process for 300 km
+```{r}
+Min_300km <- read.csv("300/300km_Min_final.csv", header=TRUE, skip=24)
+Perc25_300km <- read.csv("300/300km_25perc_final.csv", header=TRUE, skip=24)
+Med_300km <- read.csv("300/300km_Med_final.csv", header=TRUE, skip=24)
+Perc75_300km <- read.csv("300/300km_75perc_final.csv", header=TRUE, skip=24)
+Max_300km <- read.csv("300/300km_Max_final.csv", header=TRUE, skip=24)
+Time_300km_Min <- subset(Min_300km$FOM.Value..sec., Min_300km$FOM.Value..sec. <9676800)/86400
+Time_300km_25perc <- subset(Perc25_300km$FOM.Value..sec., Perc25_300km$FOM.Value..sec. <9676800)/86400
+Time_300km_Med <- subset(Med_300km$FOM.Value..sec., Med_300km$FOM.Value..sec. <9676800)/86400
+Time_300km_75perc <- subset(Perc75_300km$FOM.Value..sec., Perc75_300km$FOM.Value..sec. <9676800)/86400
+Time_300km_Max <- subset(Max_300km$FOM.Value..sec., Max_300km$FOM.Value..sec. <9676800)/86400
+Min_C <- mean(Time_300km_Min)
+Perc25_C <- mean(Time_300km_25perc)
+Med_C <- mean(Time_300km_Med)
+Perc75_C <- mean(Time_300km_75perc)
+Max_C <- mean(Time_300km_Max)
+```
+
+# Repeat Process for 350 km
+```{r}
+Min_350km <- read.csv("350/350km_Min_final.csv", header=TRUE, skip=24)
+Perc25_350km <- read.csv("350/350km_25perc_final.csv", header=TRUE, skip=24)
+Med_350km <- read.csv("350/350km_Med_final.csv", header=TRUE, skip=24)
+Perc75_350km <- read.csv("350/350km_75perc_final.csv", header=TRUE, skip=24)
+Max_350km <- read.csv("350/350km_Max_final.csv", header=TRUE, skip=24)
+Time_350km_Min <- subset(Min_350km$FOM.Value..sec., Min_350km$FOM.Value..sec. <9676800)/86400
+Time_350km_25perc <- subset(Perc25_350km$FOM.Value..sec., Perc25_350km$FOM.Value..sec. <9676800)/86400
+Time_350km_Med <- subset(Med_350km$FOM.Value..sec., Med_350km$FOM.Value..sec. <9676800)/86400
+Time_350km_75perc <- subset(Perc75_350km$FOM.Value..sec., Perc75_350km$FOM.Value..sec. <9676800)/86400
+Time_350km_Max <- subset(Max_350km$FOM.Value..sec., Max_350km$FOM.Value..sec. <9676800)/86400
+Min_D <- mean(Time_350km_Min)
+Perc25_D <- mean(Time_350km_25perc)
+Med_D <- mean(Time_350km_Med)
+Perc75_D <- mean(Time_350km_75perc)
+Max_D <- mean(Time_350km_Max)
+```
+
+# Repeat Process for 400 km
+```{r}
+Min_400km <- read.csv("400/400km_Min_final.csv", header=TRUE, skip=24)
+Perc25_400km <- read.csv("400/400km_25perc_final.csv", header=TRUE, skip=24)
+Med_400km <- read.csv("400/400km_Med_final.csv", header=TRUE, skip=24)
+Perc75_400km <- read.csv("400/400km_75perc_final.csv", header=TRUE, skip=24)
+Max_400km <- read.csv("400/400km_Max_final.csv", header=TRUE, skip=24)
+Time_400km_Min <- subset(Min_400km$FOM.Value..sec., Min_400km$FOM.Value..sec. <9676800)/86400
+Time_400km_25perc <- subset(Perc25_400km$FOM.Value..sec., Perc25_400km$FOM.Value..sec. <9676800)/86400
+Time_400km_Med <- subset(Med_400km$FOM.Value..sec., Med_400km$FOM.Value..sec. <9676800)/86400
+Time_400km_75perc <- subset(Perc75_400km$FOM.Value..sec., Perc75_400km$FOM.Value..sec. <9676800)/86400
+Time_400km_Max <- subset(Max_400km$FOM.Value..sec., Max_400km$FOM.Value..sec. <9676800)/86400
+Min_E <- mean(Time_400km_Min)
+Perc25_E <- mean(Time_400km_25perc)
+Med_E <- mean(Time_400km_Med)
+Perc75_E <- mean(Time_400km_75perc)
+Max_E <- mean(Time_400km_Max)
+```
+
+# Repeat Process for 450 km
+```{r}
+Min_450km <- read.csv("450/450km_Min_final.csv", header=TRUE, skip=24)
+Perc25_450km <- read.csv("450/450km_25perc_final.csv", header=TRUE, skip=24)
+Med_450km <- read.csv("450/450km_Med_final.csv", header=TRUE, skip=24)
+Perc75_450km <- read.csv("450/450km_75perc_final.csv", header=TRUE, skip=24)
+Max_450km <- read.csv("450/450km_Max_final.csv", header=TRUE, skip=24)
+Time_450km_Min <- subset(Min_450km$FOM.Value..sec., Min_450km$FOM.Value..sec. <9676800)/86400
+Time_450km_25perc <- subset(Perc25_450km$FOM.Value..sec., Perc25_450km$FOM.Value..sec. <9676800)/86400
+Time_450km_Med <- subset(Med_450km$FOM.Value..sec., Med_450km$FOM.Value..sec. <9676800)/86400
+Time_450km_75perc <- subset(Perc75_450km$FOM.Value..sec., Perc75_450km$FOM.Value..sec. <9676800)/86400
+Time_450km_Max <- subset(Max_450km$FOM.Value..sec., Max_450km$FOM.Value..sec. <9676800)/86400
+Min_F <- mean(Time_450km_Min)
+Perc25_F <- mean(Time_450km_25perc)
+Med_F <- mean(Time_450km_Med)
+Perc75_F <- mean(Time_450km_75perc)
+Max_F <- mean(Time_450km_Max)
+```
+
+# Repeat Process for 500 km
+```{r}
+Min_500km <- read.csv("500/500km_Min_final.csv", header=TRUE, skip=24)
+Perc25_500km <- read.csv("500/500km_25perc_final.csv", header=TRUE, skip=24)
+Med_500km <- read.csv("500/500km_Med_final.csv", header=TRUE, skip=24)
+Perc75_500km <- read.csv("500/500km_75perc_final.csv", header=TRUE, skip=24)
+Max_500km <- read.csv("500/500km_Max_final.csv", header=TRUE, skip=24)
+Time_500km_Min <- subset(Min_500km$FOM.Value..sec., Min_500km$FOM.Value..sec. <9676800)/86400
+Time_500km_25perc <- subset(Perc25_500km$FOM.Value..sec., Perc25_500km$FOM.Value..sec. <9676800)/86400
+Time_500km_Med <- subset(Med_500km$FOM.Value..sec., Med_500km$FOM.Value..sec. <9676800)/86400
+Time_500km_75perc <- subset(Perc75_500km$FOM.Value..sec., Perc75_500km$FOM.Value..sec. <9676800)/86400
+Time_500km_Max <- subset(Max_500km$FOM.Value..sec., Max_500km$FOM.Value..sec. <9676800)/86400
+Min_G <- mean(Time_500km_Min)
+Perc25_G <- mean(Time_500km_25perc)
+Med_G <- mean(Time_500km_Med)
+Perc75_G <- mean(Time_500km_75perc)
+Max_G <- mean(Time_500km_Max)
+```
+
+# Repeat Process for 550 km
+```{r}
+Min_550km <- read.csv("550/550km_Min_final.csv", header=TRUE, skip=24)
+Perc25_550km <- read.csv("550/550km_25perc_final.csv", header=TRUE, skip=24)
+Med_550km <- read.csv("550/550km_Med_final.csv", header=TRUE, skip=24)
+Perc75_550km <- read.csv("550/550km_75perc_final.csv", header=TRUE, skip=24)
+Max_550km <- read.csv("550/550km_Max_final.csv", header=TRUE, skip=24)
+Time_550km_Min <- subset(Min_550km$FOM.Value..sec., Min_550km$FOM.Value..sec. <9676800)/86400
+Time_550km_25perc <- subset(Perc25_550km$FOM.Value..sec., Perc25_550km$FOM.Value..sec. <9676800)/86400
+Time_550km_Med <- subset(Med_550km$FOM.Value..sec., Med_550km$FOM.Value..sec. <9676800)/86400
+Time_550km_75perc <- subset(Perc75_550km$FOM.Value..sec., Perc75_550km$FOM.Value..sec. <9676800)/86400
+Time_550km_Max <- subset(Max_550km$FOM.Value..sec., Max_550km$FOM.Value..sec. <9676800)/86400
+Min_H <- mean(Time_550km_Min)
+Perc25_H <- mean(Time_550km_25perc)
+Med_H <- mean(Time_550km_Med)
+Perc75_H <- mean(Time_550km_75perc)
+Max_H <- mean(Time_550km_Max)
+```
+
+# Repeat Process for 600 km
+```{r}
+Min_600km <- read.csv("600/600km_Min_final.csv", header=TRUE, skip=24)
+Perc25_600km <- read.csv("600/600km_25perc_final.csv", header=TRUE, skip=24)
+Med_600km <- read.csv("600/600km_Med_final.csv", header=TRUE, skip=24)
+Perc75_600km <- read.csv("600/600km_75perc_final.csv", header=TRUE, skip=24)
+Max_600km <- read.csv("600/600km_Max_final.csv", header=TRUE, skip=24)
+Time_600km_Min <- subset(Min_600km$FOM.Value..sec., Min_600km$FOM.Value..sec. <9676800)/86400
+Time_600km_25perc <- subset(Perc25_600km$FOM.Value..sec., Perc25_600km$FOM.Value..sec. <9676800)/86400
+Time_600km_Med <- subset(Med_600km$FOM.Value..sec., Med_600km$FOM.Value..sec. <9676800)/86400
+Time_600km_75perc <- subset(Perc75_600km$FOM.Value..sec., Perc75_600km$FOM.Value..sec. <9676800)/86400
+Time_600km_Max <- subset(Max_600km$FOM.Value..sec., Max_600km$FOM.Value..sec. <9676800)/86400
+Min_I <- mean(Time_600km_Min)
+Perc25_I <- mean(Time_600km_25perc)
+Med_I <- mean(Time_600km_Med)
+Perc75_I <- mean(Time_600km_75perc)
+Max_I <- mean(Time_600km_Max)
+```
+
+# Repeat Process for 650 km
+```{r}
+Min_650km <- read.csv("650/650km_Min_final.csv", header=TRUE, skip=24)
+Perc25_650km <- read.csv("650/650km_25perc_final.csv", header=TRUE, skip=24)
+Med_650km <- read.csv("650/650km_Med_final.csv", header=TRUE, skip=24)
+Perc75_650km <- read.csv("650/650km_75perc_final.csv", header=TRUE, skip=24)
+Max_650km <- read.csv("650/650km_Max_final.csv", header=TRUE, skip=24)
+Time_650km_Min <- subset(Min_650km$FOM.Value..sec., Min_650km$FOM.Value..sec. <9676800)/86400
+Time_650km_25perc <- subset(Perc25_650km$FOM.Value..sec., Perc25_650km$FOM.Value..sec. <9676800)/86400
+Time_650km_Med <- subset(Med_650km$FOM.Value..sec., Med_650km$FOM.Value..sec. <9676800)/86400
+Time_650km_75perc <- subset(Perc75_650km$FOM.Value..sec., Perc75_650km$FOM.Value..sec. <9676800)/86400
+Time_650km_Max <- subset(Max_650km$FOM.Value..sec., Max_650km$FOM.Value..sec. <9676800)/86400
+Min_J <- mean(Time_650km_Min)
+Perc25_J <- mean(Time_650km_25perc)
+Med_J <- mean(Time_650km_Med)
+Perc75_J <- mean(Time_650km_75perc)
+Max_J <- mean(Time_650km_Max)
+```
+
+# Repeat Process for 700 km
+```{r}
+Min_700km <- read.csv("700/700km_Min_final.csv", header=TRUE, skip=24)
+Perc25_700km <- read.csv("700/700km_25perc_final.csv", header=TRUE, skip=24)
+Med_700km <- read.csv("700/700km_Med_final.csv", header=TRUE, skip=24)
+Perc75_700km <- read.csv("700/700km_75perc_final.csv", header=TRUE, skip=24)
+Max_700km <- read.csv("700/700km_Max_final.csv", header=TRUE, skip=24)
+Time_700km_Min <- subset(Min_700km$FOM.Value..sec., Min_700km$FOM.Value..sec. <9676800)/86400
+Time_700km_25perc <- subset(Perc25_700km$FOM.Value..sec., Perc25_700km$FOM.Value..sec. <9676800)/86400
+Time_700km_Med <- subset(Med_700km$FOM.Value..sec., Med_700km$FOM.Value..sec. <9676800)/86400
+Time_700km_75perc <- subset(Perc75_700km$FOM.Value..sec., Perc75_700km$FOM.Value..sec. <9676800)/86400
+Time_700km_Max <- subset(Max_700km$FOM.Value..sec., Max_700km$FOM.Value..sec. <9676800)/86400
+Min_K <- mean(Time_700km_Min)
+Perc25_K <- mean(Time_700km_25perc)
+Med_K <- mean(Time_700km_Med)
+Perc75_K <- mean(Time_700km_75perc)
+Max_K <- mean(Time_700km_Max)
+```
+
+# Collate Data for Box Plot
+```{r}
+data_ggplot2_b <- data.frame(Altitude = c("200km", "250km", "300km", "350km", "400km", "450km", "500km", "550km", "600km", "650km", "700km"),  # Create data frame of values
+                             whisker_lower = c(Min_A, Min_B, Min_C, Min_D, Min_E, Min_F, Min_G, Min_H, Min_I, Min_J, Min_K),
+                             quartile_1st = c(Perc25_A, Perc25_B, Perc25_C, Perc25_D, Perc25_E, Perc25_F, Perc25_G, Perc25_H, Perc25_I, Perc25_J, Perc25_K),
+                             median = c(Med_A, Med_B, Med_C, Med_D, Med_E, Med_F, Med_G, Med_H, Med_I, Med_J, Med_K),
+                             quartile_3rd = c(Perc75_A, Perc75_B, Perc75_C, Perc75_D, Perc75_E, Perc75_F, Perc75_G, Perc75_H, Perc75_I, Perc75_J, Perc75_K),
+                             whisker_upper = c(Max_A, Max_B, Max_C, Max_D, Max_E, Max_F, Max_G, Max_H, Max_I, Max_J, Max_K),
+                             #Add in handcalc values
+Calculated_Value = c(158813, 129856, 110173, 104216, 107387, 112791, 121792, 135854, 161488, 223436, 36300960)/86400)
+data_ggplot2_b      
+```
+
+
+# Plot the Data in Multiple Box Plots on One Graph
+
+```{r}
+ggplot(data_ggplot2_b,                             # Draw multiple ggplot2 boxplots
+       aes(x = Altitude,
+           ymin = whisker_lower,
+           lower = quartile_1st,
+           middle = median,
+           upper = quartile_3rd,
+           ymax = whisker_upper,
+           fill = Altitude)) +
+  geom_boxplot(stat = "identity") +
+  geom_line(data = data_ggplot2_b, mapping = aes(x = Altitude, y = Calculated_Value, group = 1, colour = "Calculated Value"), linetype=1, linewidth=0.7) +
+  scale_colour_manual(values = "grey32") +
+  ggtitle("Revisit Time against Altitude") +
+  labs(y= "Revisit Time (Days)", x = "Altitude (km)", colour = NULL) +
+  ylim(0, 10)
+```

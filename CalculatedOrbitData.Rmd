@@ -1,0 +1,38 @@
+```{r}
+library(tidyverse)
+library(tibble)
+library(fs)
+library(ggplot2)
+library(dplyr)
+library(ggpubr)
+library(ggbreak)
+```
+
+
+```{r}
+# Read in data
+orbit_data <- read.csv("CalculatedOrbitData.csv", header = TRUE)
+```
+
+```{r}
+pl1 <- ggplot() +
+  xlim(200, 700) +
+  ylim(0, 4) +
+#  scale_y_cut(breaks = 10, which = 1, scales = c(0.5, 1)) +
+  geom_line(data = orbit_data, aes(x = ALTITUDE, y = X0, colour ="0 Degrees")) +
+  geom_line(data = orbit_data, aes(x = ALTITUDE, y = X10, colour ="10 Degrees")) +
+  geom_line(data = orbit_data, aes(x = ALTITUDE, y = X20, colour ="20 Degrees")) +
+  geom_line(data = orbit_data, aes(x = ALTITUDE, y = X30, colour ="30 Degrees")) +
+  geom_line(data = orbit_data, aes(x = ALTITUDE, y = X40, colour ="40 Degrees")) +
+  geom_line(data = orbit_data, aes(x = ALTITUDE, y = X50, colour ="50 Degrees")) +
+  geom_line(data = orbit_data, aes(x = ALTITUDE, y = X60, colour ="60 Degrees")) +
+  geom_line(data = orbit_data, aes(x = ALTITUDE, y = AVERAGE, colour ="Average")) +
+  scale_color_manual(name = "Latitude", breaks = c("0 Degrees", "10 Degrees", "20 Degrees", "30 Degrees", "40 Degrees", "50 Degrees", "60 Degrees", "Average"), values = c("0 Degrees" = "skyblue2", "10 Degrees" = "springgreen", "30 Degrees" = "darkorchid4", "40 Degrees" = "magenta", "50 Degrees" = "orange", "60 Degrees" = "firebrick", "Average" = "black")) +
+  labs(title = "Calculated Estimates of Revisit Time", x = "Altitude / km", y = "Revisit Time / Days") +
+  theme(text = element_text(size = 20, colour = "black"),
+        plot.title = element_text(size = 24, colour = "black", hjust = 0.5),
+        axis.title.x = element_text(size = 22, colour ="black"),
+        axis.text = element_text(size = 20, colour = "black"))
+pl1
+```
+

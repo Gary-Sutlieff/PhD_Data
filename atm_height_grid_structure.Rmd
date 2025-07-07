@@ -1,0 +1,56 @@
+---
+title: "ATM_Structure"
+output: html_document
+date: "2025-06-10"
+---
+
+```{r}
+# load packages
+library(dplyr)
+library(mgcv)
+library(broom)
+library(ggplot2)
+library(gridExtra)
+library(ggpubr)
+```
+
+```{r}
+hgt_grid_mipas <- seq(1, 120, by=1)
+
+
+hgt_grid_fine_1 <- seq(0.001, 0.1, by = 0.001)
+hgt_grid_fine_2 <- seq(0.102, 1.002, by = 0.002)
+hgt_grid_fine_3 <- seq(2, 20, by = 1)
+hgt_grid_fine_4 <- seq(25, 70, by = 5)
+hgt_grid_fine_5 <- seq(80, 120, by = 10)
+
+hgt_grid_fine_6 <- append(hgt_grid_fine_1, hgt_grid_fine_2)
+hgt_grid_fine_7 <- append(hgt_grid_fine_6, hgt_grid_fine_3)
+hgt_grid_fine_8 <- append(hgt_grid_fine_7, hgt_grid_fine_4)
+hgt_grid_fine <- append(hgt_grid_fine_8, hgt_grid_fine_5)
+
+```
+
+```{r}
+# plot the two different height grid structures against one another
+
+p1a <- ggplot() +
+  scale_y_log10(limits = c(1e-3, 120), breaks = c(1e-3, 1e-2, 1e-1, 1, 10, 100), labels = c(0.001, 0.01, 0.1, 1, 10, 100)) +
+  geom_hline(aes(yintercept = hgt_grid_fine, linetype = "This Research"), color = 'black') +
+  geom_hline(aes(yintercept = hgt_grid_mipas, linetype = "Previous Study"), color = 'red') +
+  scale_linetype_manual(name = "Height Grid For:", values = c(2, 1), guide = guide_legend(override.aes = list(color = c("red", "black")))) +
+  labs(title = "Comparison of the Baseline Height Grids", x = "", y = "Altitude (km)") +
+    theme(text = element_text(size = 16, colour = "black"),
+        plot.title = element_text(size = 16, colour = "black", hjust = 0.2),
+        axis.title.x = element_text(size = 16, colour ="black"),
+        axis.title.y = element_text(size = 16, colour ="black"),
+        axis.text = element_text(size = 14, colour = "black"))
+  
+
+
+p1a
+```
+
+```{r}
+
+```

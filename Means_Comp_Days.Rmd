@@ -1,0 +1,138 @@
+---
+title: "All_Lats_Comp"
+output: html_document
+date: "2024-02-28"
+---
+
+```{r}
+library(ggplot2)
+library(tidyverse)
+```
+
+```{r}
+Lat0 <- read.csv("Lat0.csv", header=TRUE)
+Lat30 <- read.csv("Lat30.csv", header=TRUE)
+LatN30 <- read.csv("LatN30.csv", header=TRUE)
+Lat60 <- read.csv("Lat60.csv", header=TRUE)
+LatN55 <- read.csv("LatN55.csv", header=TRUE)
+```
+
+```{r}
+Mean_A_0 <- Lat0$X200[6]/86400
+Mean_B_0 <- Lat0$X250[6]/86400
+Mean_C_0 <- Lat0$X300[6]/86400
+Mean_D_0 <- Lat0$X350[6]/86400
+Mean_E_0 <- Lat0$X400[6]/86400
+Mean_F_0 <- Lat0$X450[6]/86400
+Mean_G_0 <- Lat0$X500[6]/86400
+Mean_H_0 <- Lat0$X550[6]/86400
+Mean_I_0 <- Lat0$X600[6]/86400
+Mean_J_0 <- Lat0$X650[6]/86400
+Mean_K_0 <- Lat0$X700[6]/86400
+
+Mean_A_30 <- Lat30$X200[6]/86400
+Mean_B_30 <- Lat30$X250[6]/86400
+Mean_C_30 <- Lat30$X300[6]/86400
+Mean_D_30 <- Lat30$X350[6]/86400
+Mean_E_30 <- Lat30$X400[6]/86400
+Mean_F_30 <- Lat30$X450[6]/86400
+Mean_G_30 <- Lat30$X500[6]/86400
+Mean_H_30 <- Lat30$X550[6]/86400
+Mean_I_30 <- Lat30$X600[6]/86400
+Mean_J_30 <- Lat30$X650[6]/86400
+Mean_K_30 <- Lat30$X700[6]/86400
+
+Mean_A_60 <- Lat60$X200[6]/86400
+Mean_B_60 <- Lat60$X250[6]/86400
+Mean_C_60 <- Lat60$X300[6]/86400
+Mean_D_60 <- Lat60$X350[6]/86400
+Mean_E_60 <- Lat60$X400[6]/86400
+Mean_F_60 <- Lat60$X450[6]/86400
+Mean_G_60 <- Lat60$X500[6]/86400
+Mean_H_60 <- Lat60$X550[6]/86400
+Mean_I_60 <- Lat60$X600[6]/86400
+Mean_J_60 <- Lat60$X650[6]/86400
+Mean_K_60 <- Lat60$X700[6]/86400
+
+Mean_A_N30 <- LatN30$X200[6]/86400
+Mean_B_N30 <- LatN30$X250[6]/86400
+Mean_C_N30 <- LatN30$X300[6]/86400
+Mean_D_N30 <- LatN30$X350[6]/86400
+Mean_E_N30 <- LatN30$X400[6]/86400
+Mean_F_N30 <- LatN30$X450[6]/86400
+Mean_G_N30 <- LatN30$X500[6]/86400
+Mean_H_N30 <- LatN30$X550[6]/86400
+Mean_I_N30 <- LatN30$X600[6]/86400
+Mean_J_N30 <- LatN30$X650[6]/86400
+Mean_K_N30 <- LatN30$X700[6]/86400
+
+Mean_A_N55 <- LatN55$X200[6]/86400
+Mean_B_N55 <- LatN55$X250[6]/86400
+Mean_C_N55 <- LatN55$X300[6]/86400
+Mean_D_N55 <- LatN55$X350[6]/86400
+Mean_E_N55 <- LatN55$X400[6]/86400
+Mean_F_N55 <- LatN55$X450[6]/86400
+Mean_G_N55 <- LatN55$X500[6]/86400
+Mean_H_N55 <- LatN55$X550[6]/86400
+Mean_I_N55 <- LatN55$X600[6]/86400
+Mean_J_N55 <- LatN55$X650[6]/86400
+Mean_K_N55 <- LatN55$X700[6]/86400
+```
+
+```{r}
+data_ggplot2_b <- data.frame(Altitude = c("200km", "250km", "300km", "350km", "400km", "450km", "500km", "550km", "600km", "650km", "700km"),  # Create data frame of values
+                             Means_Lat0 = c(Mean_A_0, Mean_B_0, Mean_C_0, Mean_D_0, Mean_E_0, Mean_F_0, Mean_G_0, Mean_H_0, Mean_I_0, Mean_J_0, Mean_K_0),
+                             Means_Lat30 = c(Mean_A_30, Mean_B_30, Mean_C_30, Mean_D_30, Mean_E_30, Mean_F_30, Mean_G_30, Mean_H_30, Mean_I_30, Mean_J_30, Mean_K_30),
+                             Means_Lat60 = c(Mean_A_60, Mean_B_60, Mean_C_60, Mean_D_60, Mean_E_60, Mean_F_60, Mean_G_60, Mean_H_60, Mean_I_60, Mean_J_60, Mean_K_60),
+                             Means_LatN30 = c(Mean_A_N30, Mean_B_N30, Mean_C_N30, Mean_D_N30, Mean_E_N30, Mean_F_N30, Mean_G_N30, Mean_H_N30, Mean_I_N30, Mean_J_N30, Mean_K_N30),
+                             Means_LatN55 = c(Mean_A_N55, Mean_B_N55, Mean_C_N55, Mean_D_N55, Mean_E_N55, Mean_F_N55, Mean_G_N55, Mean_H_N55, Mean_I_N55, Mean_J_N55, Mean_K_N55),
+                             #Add in handcalc values
+Calculated_Value = c(158813, 129856, 110173, 104216, 107387, 112791, 121792, 135854, 161488, 223436, 36300960)/86400)
+data_ggplot2_b      
+```
+
+```{r}
+df2 <- data_ggplot2_b %>%
+  select(Altitude, Means_Lat0, Means_Lat30, Means_Lat60, Means_LatN30, Means_LatN55, Calculated_Value) %>%
+  gather(key = "variable", value = "value", -Altitude)
+head(df2)
+```
+#```{r}
+#ggplot(df2, aes(x = Altitude, y = value, group=1)) + 
+#  geom_line(aes(color = variable)) + 
+#  scale_color_manual(values = c("darkred", "steelblue", "orange", "forestgreen", "pink", "black")) +
+#                       coord_cartesian(ylim=c(0, 3), clip= 'on')
+#```
+
+
+
+```{r}
+ggplot(data_ggplot2_b) + 
+  geom_line(mapping=aes(x=Altitude, y = Means_Lat0), color="darkred", group=1, linewidth=0.7, show.legend = TRUE) +
+  geom_line(mapping=aes(x=Altitude, y = Means_Lat30), color="steelblue", group=1, linewidth=0.7, show.legend = TRUE) +
+  geom_line(mapping=aes(x=Altitude, y = Means_Lat60), color="orange", group=1, linewidth=0.7, show.legend = TRUE) +
+  geom_line(mapping=aes(x=Altitude, y = Means_LatN30), color="forestgreen", group=1, linewidth=0.7, show.legend = TRUE) +
+  geom_line(mapping=aes(x=Altitude, y = Means_LatN55), color="pink", group=1, linewidth=0.7, show.legend = TRUE) +
+  geom_line(mapping=aes(x=Altitude, y = Calculated_Value), color="black", group=1, linewidth=0.7, show.legend = TRUE) +
+  scale_color_manual(name = "Latitude Series", values = c("0 Degrees" = "darkred", "30 Degrees" = "steelblue", "60 Degrees" = "orange", "-30 Degrees" = "forestgreen", "-55 Degrees" = "pink", "Calculated Value" = "black" )) +
+  labs(y = "Revisit Time (Days)", x= "Altitude (km)", color = 'Latitude Series') +
+  coord_cartesian(ylim=c(0, 3), clip= 'on')
+```
+
+```{r}
+ggplot(data_ggplot2_b) + 
+  geom_line(mapping=aes(x=Altitude, y = Means_Lat0, color="0 Degrees"), group=1, linewidth=0.7, show.legend = TRUE) +
+  geom_line(mapping=aes(x=Altitude, y = Means_Lat30, color="30 Degrees"), group=1, linewidth=0.7, show.legend = TRUE) +
+  geom_line(mapping=aes(x=Altitude, y = Means_Lat60, color="60 Degrees"), group=1, linewidth=0.7, show.legend = TRUE) +
+  geom_line(mapping=aes(x=Altitude, y = Means_LatN30, color="-30 Degrees"), group=1, linewidth=0.7, show.legend = TRUE) +
+  geom_line(mapping=aes(x=Altitude, y = Means_LatN55, color="-55 Degrees"), group=1, linewidth=0.7, show.legend = TRUE) +
+  geom_line(mapping=aes(x=Altitude, y = Calculated_Value, color="Calculated Value"), group=1, linewidth=0.7, show.legend = TRUE) +
+  scale_color_manual(name = "Latitude", values = c("0 Degrees" = "darkred", "30 Degrees" = "steelblue", "60 Degrees" = "orange", "-30 Degrees" = "forestgreen", "-55 Degrees" = "pink", "Calculated Value" = "black" ), breaks = c("0 Degrees", "30 Degrees", "60 Degrees", "-30 Degrees", "-55 Degrees", "Calculated Value")) +
+  labs(title = "Mean Revisit Time Against Altitude for each Latitude", y = "Revisit Time (Days)", x= "Altitude (km)", color = 'Latitude') +
+  coord_cartesian(ylim=c(0, 3), clip= 'on')
+```
+
+
+
+
+
