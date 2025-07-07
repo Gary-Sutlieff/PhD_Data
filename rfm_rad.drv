@@ -1,0 +1,46 @@
+!RFM driver table
+*HDR              Text written into headers of all output files
+         RFM for generating jacobians
+*FLG              Option flags
+         CTM RAD OBS LUN SFC DBL ILS !JAC !BBT !TRA
+*SPC              Spectral range / sampling
+	     645 1500 0.25
+*GAS              List of absorbing species
+         CH4 N2O CO2 O3 HNO3 H2O GB ! SM
+
+!Swap GB and SM as required depending on which CWA is being tested, or remove both when collecting a measurement without any
+
+*ATM              List of atmospheric profiles
+            hgt_std_mod4a.atm
+	    mipas_midl_day_d2.atm
+	    extra_species_v3_1.dat
+            CWA.atm
+
+!Replace CWA.atm with whichever CWA's atmosphere profile is being tested (i.e. GB_100_1.atm for 1 min after 100kg sarin release)
+!Also replace hgt_std_mod4a.atm with the desired baseline height grid
+
+*ELE              Observer angle to horizontal (degrees)
+         -90
+*OBS              Altitude of satellite (km)
+         817.000
+*HIT              Location of hitran information
+        HITRAN2020.par
+*SFC		  Surface Temperature and Emissivity (Default =1)
+          295 0.98
+*ILS		  File Containing an Instrument Line Shape (ILS)
+        iasi_1cm.ils
+
+!If collecting raw top of atmosphere radiance without a line shape, comment out the line shape filename and the ILS options flag above
+
+*RAD		  New Output name for rad RFM file.
+         Rad_CWA_Yils*.asc
+
+!Rename output files as desired/needed, my convention typically follows CWA_MassReleased_TimeAfterRelease_LineshapeYesOrNo (i.e. GB_I100_1_Y*.asc for 1 minute after 100 kg sarin release with individual building interactions, considering the IASI lineshape)
+
+*JAC		  Jacobians
+         !GB rfm0.tan rfm1.tan
+	 !SM rfm0.tan rfm1.tan
+*XSC		  Cross Sections
+         sm.xsc
+	 gb.xsc
+*END
